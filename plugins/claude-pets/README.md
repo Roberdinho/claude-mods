@@ -20,7 +20,11 @@ You start with **Clawd**. Add more with `/pet`:
 | `/pet list` | who lives here |
 | `/pet rename Luna Nova` | rename a pet |
 | `/pet remove Luna` | say goodbye |
-| `/pet hide`, `/pet show` | put the band away and bring it back |
+| `/pet` | open the pets in a side panel (Esc or its **close** button closes it) |
+| `/pet hide`, `/pet show` | put the band and panel away, and bring them back |
+
+In the desktop app, which draws nothing above the prompt, a session starts with the pets in
+their side panel (without taking the keyboard) unless `/pet hide` put them away.
 
 Pets: `clawd`, `cat`, `dog`, `crab` (Ferris), `fox`, `duck` (a rubber duck, naturally),
 `rabbit`, `snake`. Up to 8 at once. Your pets are remembered across sessions.

@@ -21,10 +21,12 @@ import {
 
 const PLUGIN = 'claude-pets'
 const BALL_BUTTON = 9
+const PANE = 'claude-pets'
 
 const petsAtom = atom({ plugin: 'claude-pets', key: 'pets' } as const, [])
 const sceneAtom = atom({ plugin: 'claude-pets', key: 'scene' } as const, emptyScene(1))
 const hiddenAtom = atom({ plugin: 'claude-pets', key: 'isHidden' } as const, false)
+const paneOpenAtom = atom({ plugin: 'claude-pets', key: 'isPaneOpen' } as const, false)
 
 /** What this load of the module holds; a reload starts it over. */
 const live = {
@@ -42,6 +44,19 @@ async function savePets($: EngineInterface, pets: Pet[]): Promise<void> {
 async function setHidden($: EngineInterface, isHidden: boolean): Promise<void> {
   await update($, hiddenAtom, () => isHidden)
   await $.store.set('isHidden', isHidden)
+  if (isHidden) await closePane($)
+}
+
+/** Opens the playground as a side panel: the desktop app draws no strip above the prompt. */
+async function openPane($: EngineInterface, focus = true): Promise<void> {
+  await $.ui.open({ id: PANE, title: 'Pets', ...(focus ? { focus: true } : {}), closeOnEscape: true, rows: 8 })
+  // The panel stands in for the strip above the prompt while it is open.
+  await update($, paneOpenAtom, () => true)
+}
+
+async function closePane($: EngineInterface): Promise<void> {
+  await $.ui.close({ id: PANE })
+  await update($, paneOpenAtom, () => false)
 }
 
 async function tick($: EngineInterface): Promise<void> {
@@ -56,6 +71,11 @@ async function run($: EngineInterface, args: string): Promise<string> {
   const pets = await read($, petsAtom)
   switch (command.kind) {
     case 'help':
+      // A bare /pet opens the playground's panel.
+      if (args.trim() === '') {
+        await setHidden($, false)
+        await openPane($)
+      }
       return `${describePets(pets)}\n\n${HELP}`
     case 'list':
       return describePets(pets)
@@ -89,6 +109,7 @@ async function run($: EngineInterface, args: string): Promise<string> {
       return 'The pets are napping out of sight. /pet show brings them back.'
     case 'show':
       await setHidden($, false)
+      await openPane($)
       return pets.length === 0 ? 'No pets yet. Add one: /pet add cat' : 'Here they are!'
     case 'error':
       return command.text
@@ -116,8 +137,19 @@ export const register: Register = (on, options) => {
     // A reload keeps the scene running; a new session starts a fresh one.
     await update($, sceneAtom, scene => (scene.tick > 0 ? scene : emptyScene(seed + 7)))
     $.clock.every(TICK_MS, () => void tick($).catch(() => undefined))
+    // A load starts with the panel closed, even one left open before a reload,
+    // except in the desktop app, where the pets live in the panel unless hidden.
+    await closePane($)
+    const isDesktop = (await $.env.get('CLAUDE_CODE_ENTRYPOINT')) === 'claude-desktop'
+    if (isDesktop && !isHidden) await openPane($, false)
 
     return started
+  })
+
+  on('ui.close', async ($, e, next) => {
+    const closed = await next(e)
+    if (e.id === PANE) await update($, paneOpenAtom, () => false)
+    return closed
   })
 
   on('command.run', { command: 'pet' }, async ($, e) => ({ text: await run($, e.args) }))
@@ -140,7 +172,7 @@ export const register: Register = (on, options) => {
   })
 
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
-    if (e.props.hasSurvey || (await read($, hiddenAtom))) return next(e)
+    if (e.props.hasSurvey || (await read($, hiddenAtom)) || (await read($, paneOpenAtom))) return next(e)
     const pets = await read($, petsAtom)
     if (pets.length === 0) return next(e)
     const scene = await read($, sceneAtom)
@@ -167,6 +199,29 @@ export const register: Register = (on, options) => {
           />
         </Box>
         {below}
+      </Box>
+    )
+  })
+
+  on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
+    const { Box, Button, Text } = $.ui.resolve(e)
+    const pets = await read($, petsAtom)
+    if (pets.length === 0) return <Text dimColor>No pets yet. Add one: /pet add cat</Text>
+    const scene = await read($, sceneAtom)
+    live.width = Math.max(20, e.props.bodyColumns)
+    const rows = drawScene(scene, pets, live.width)
+
+    return (
+      <Box flexDirection="column">
+        {rows.map(runs => (
+          <Text wrap="truncate">
+            {runs.map(one => (one.color === undefined ? one.text : <Text color={one.color}>{one.text}</Text>))}
+          </Text>
+        ))}
+        <Box flexDirection="row">
+          <Button key="ball" label="ball" hotkey="b" onPress={() => update($, sceneAtom, s => throwBall(wake(s), live.width))} />
+          <Button key="close" label="close" onPress={() => closePane($)} />
+        </Box>
       </Box>
     )
   })
