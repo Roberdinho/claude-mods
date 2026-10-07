@@ -132,15 +132,38 @@ describe('the session', () => {
       })
       expect(await stepped.find({ key: 'feed' })).toBeUndefined()
       await stepped.unmount()
-      await $.command.run({ command: 'codepet', args: 'close' } as never)
-      const back = await $.ui.mount({
+      const strip = async () => {
+        const band = await $.ui.mount({
+          plugin: 'coding-pet',
+          surface: 'desktop',
+          component: 'AbovePrompt',
+          props: { hasSurvey: false, isWorking: false, maxRows: 6, bodyColumns: 100 } as never,
+        })
+        const isShown = (await band.find({ key: 'feed' })) !== undefined
+        await band.unmount()
+        return isShown
+      }
+
+      // /codepet close puts away the panel and the strip; it still speaks up.
+      const closed = await $.command.run({ command: 'codepet', args: 'close' } as never)
+      expect(String(closed.text)).toContain('panel and strip are closed')
+      expect(await strip()).toBe(false)
+      // Opening and closing the panel by itself leaves the strip put away.
+      await $.command.run({ command: 'codepet', args: '' } as never)
+      const panel = await $.ui.mount({
         plugin: 'coding-pet',
         surface: 'desktop',
-        component: 'AbovePrompt',
-        props: { hasSurvey: false, isWorking: false, maxRows: 6, bodyColumns: 100 } as never,
-      })
-      expect(await back.find({ key: 'feed' })).toBeDefined()
-      await back.unmount()
+        component: 'Pane',
+        requestId: 'coding-pet',
+        props: { title: 'Byte', isFocused: true, bodyColumns: 60 } as never,
+      } as never)
+      await panel.press({ key: 'close' })
+      await panel.unmount()
+      expect(await strip()).toBe(false)
+      // /codepet show brings the strip back.
+      const back = await $.command.run({ command: 'codepet', args: 'show' } as never)
+      expect(String(back.text)).toContain('back above the prompt')
+      expect(await strip()).toBe(true)
 
       // Hidden, it is silent: hours later it is hungry, and says nothing.
       const hidden = await $.command.run({ command: 'codepet', args: 'hide' } as never)

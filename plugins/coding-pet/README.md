@@ -22,14 +22,15 @@ while you and Claude code, levels up and grows, and needs feeding, play and rest
 
 | Command | Does |
 | --- | --- |
-| `/codepet` | open the panel (Esc, its **close** button or `/codepet close` closes it) |
+| `/codepet` | open the panel (Esc or its **close** button closes it) |
+| `/codepet close`, `/codepet show` | put away the panel and the strip above the prompt (toasts still come), and bring the strip back |
 | `/codepet feed [apple\|pizza\|coffee\|cookie]` | feed it (apple when you don't say) |
 | `/codepet foods` | what each food does |
 | `/codepet play` | play ball: happier, but it costs energy |
 | `/codepet rest` | a 20 minute nap that restores energy; again to wake it |
 | `/codepet stats` | everything about it, as text |
 | `/codepet name <name>`, `/codepet species <blob\|cat\|crab>` | rename it, or change what it is |
-| `/codepet hide`, `/codepet show` | hide it completely, silent too: no strip, panel, toasts or status line (it still earns XP); and back |
+| `/codepet hide` | hide it completely, silent too: no strip, panel, toasts or status line (it still earns XP); `/codepet show` brings it back |
 | `/codepet reset confirm` | say goodbye and start over with a new egg |
 
 ## How it grows

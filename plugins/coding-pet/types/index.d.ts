@@ -170,6 +170,8 @@ declare module 'claude-code' {
       isBusy: boolean
       /** The panel is open; the strip above the prompt steps aside for it. */
       isPaneOpen: boolean
+      /** `/codepet close` put the strip above the prompt away too; `/codepet show` brings it back. */
+      isStripClosed: boolean
     }
   }
 }

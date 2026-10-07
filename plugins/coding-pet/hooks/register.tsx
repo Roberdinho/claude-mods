@@ -30,6 +30,7 @@ const frameAtom = atom({ plugin: 'coding-pet', key: 'frame' } as const, 0)
 const hiddenAtom = atom({ plugin: 'coding-pet', key: 'isHidden' } as const, false)
 const busyAtom = atom({ plugin: 'coding-pet', key: 'isBusy' } as const, false)
 const paneOpenAtom = atom({ plugin: 'coding-pet', key: 'isPaneOpen' } as const, false)
+const stripClosedAtom = atom({ plugin: 'coding-pet', key: 'isStripClosed' } as const, false)
 
 /** What this load of the module holds; a reload starts it over. */
 const live = {
@@ -142,12 +143,24 @@ function animate($: EngineInterface, isOn: boolean): void {
   live.animation ??= $.clock.every(FRAME_MS, () => void update($, frameAtom, frame => (frame + 1) % 1_000_000).catch(() => undefined))
 }
 
+/** Closes the panel, and lets the strip above the prompt step back in. */
+async function closePane($: EngineInterface): Promise<void> {
+  await $.ui.close({ id: PANE })
+  await update($, paneOpenAtom, () => false)
+}
+
+/** Puts the strip above the prompt away (it keeps toasting) or brings it back. */
+async function setStripClosed($: EngineInterface, isClosed: boolean): Promise<void> {
+  await update($, stripClosedAtom, () => isClosed)
+  await $.store.set('isStripClosed', isClosed)
+}
+
 /** Hides the pet entirely (strip, panel, toasts, status line) or brings it back. */
 async function setHidden($: EngineInterface, isHidden: boolean): Promise<void> {
   await update($, hiddenAtom, () => isHidden)
   await $.store.set('isHidden', isHidden)
   animate($, !isHidden)
-  if (isHidden) await $.ui.close({ id: PANE })
+  if (isHidden) await closePane($)
   const pet = await read($, petAtom)
   if (pet !== null) await showStatus($, pet, moodOf(pet, await $.clock.now(), await read($, busyAtom)), await registryOf($))
 }
@@ -216,13 +229,15 @@ async function run($: EngineInterface, args: string): Promise<string> {
         .map(food => `${food.emoji} ${food.id}: ${Object.entries(food.effect).map(([stat, n]) => `${stat} ${n > 0 ? '+' : ''}${n}`).join(', ')}`)
         .join('\n')
     case 'close':
-      await $.ui.close({ id: PANE })
-      return `${pet.name}'s panel is closed. /codepet opens it again.`
+      await closePane($)
+      await setStripClosed($, true)
+      return `${pet.name}'s panel and strip are closed. /codepet opens the panel, /codepet show brings the strip back.`
     case 'hide':
       await setHidden($, true)
       return `${pet.name} is hidden and silent: no strip, panel, toasts or status line. It still earns XP. /codepet show brings it back.`
     case 'show': {
       await setHidden($, false)
+      await setStripClosed($, false)
       const now = await $.clock.now()
       const needs = needsOf(decay(pet, now, live.settings))
       return `${pet.name} is back above the prompt.${needs.length === 0 ? '' : ` It is ${needs.join(' and ')}.`}`
@@ -275,7 +290,7 @@ export const register: Register = (on, options) => {
     await $.command.register({
       name: 'codepet',
       description: 'Your coding pet: /codepet opens it, feed, play, rest, stats, name',
-      argumentHint: '[feed [food] | play | rest | stats | name <name> | species <kind> | foods | close | hide | show | reset]',
+      argumentHint: '[feed [food] | play | rest | stats | name <name> | species <kind> | foods | close | show | hide | reset]',
       immediate: true,
     })
     if (live.modelTool) {
@@ -298,8 +313,9 @@ export const register: Register = (on, options) => {
     await update($, petAtom, () => pet)
     await $.store.set('pet', pet)
     // A load starts with the panel closed, even one left open before a reload.
-    await $.ui.close({ id: PANE })
-    await update($, paneOpenAtom, () => false)
+    await closePane($)
+    const isStripClosed = (await $.store.get('isStripClosed')) === true
+    await update($, stripClosedAtom, () => isStripClosed)
     const isHidden = (await $.store.get('isHidden')) === true
     await update($, hiddenAtom, () => isHidden)
     await announce($, pet, [], now)
@@ -365,7 +381,7 @@ export const register: Register = (on, options) => {
 
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
     live.windowRows = e.viewport?.rows ?? e.props.maxRows * 2
-    if (!live.showBand || e.props.hasSurvey || (await read($, hiddenAtom)) || (await read($, paneOpenAtom))) return next(e)
+    if (!live.showBand || e.props.hasSurvey || (await read($, hiddenAtom)) || (await read($, paneOpenAtom)) || (await read($, stripClosedAtom))) return next(e)
     const pet = await read($, petAtom)
     if (pet === null) return next(e)
     const frame = await read($, frameAtom)
@@ -558,7 +574,7 @@ export const register: Register = (on, options) => {
           ))}
           <Button key="play" label="play" hotkey="p" onPress={() => care($, { kind: 'play' })} />
           <Button key="rest" label={mood === 'sleeping' ? 'wake' : 'rest'} hotkey="r" onPress={() => care($, { kind: 'rest' })} />
-          <Button key="close" label="close" hotkey="x" role="dismiss" dimColor onPress={() => $.ui.close({ id: PANE })} />
+          <Button key="close" label="close" hotkey="x" role="dismiss" dimColor onPress={() => closePane($)} />
         </Box>
       </Box>
     )
