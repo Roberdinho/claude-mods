@@ -20,6 +20,14 @@
       "keywords": ["music", "youtube music", "spotify", "now playing"]
     },
     {
+      "name": "claude-pets",
+      "source": "./plugins/claude-pets",
+      "description": "VS Code Pets for Claude Code: pets above your prompt that wander, chase balls, cheer when a turn ends and nap when you're away: /pet",
+      "version": "0.1.0",
+      "category": "fun",
+      "keywords": ["pets", "vscode-pets", "cat", "dog", "clawd"]
+    },
+    {
       "name": "coding-pet",
       "source": "./plugins/coding-pet",
       "description": "A Tamagotchi-style coding companion: it earns XP from edits, reads, passing tests and commits, levels up and evolves, and needs feeding, play and rest. /codepet",

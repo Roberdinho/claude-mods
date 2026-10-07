@@ -1,0 +1,23 @@
+{
+  "name": "claude-pets",
+  "version": "0.1.0",
+  "description": "VS Code Pets for Claude Code: a cat, dog, crab, fox, rubber duck or Clawd that lives above your prompt, chases balls, cheers when a turn ends and naps when you're away",
+  "author": { "name": "R. Woeltjes" },
+  "license": "MIT",
+  "keywords": ["pets", "vscode-pets", "cat", "dog", "clawd", "fun"],
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "sleepAfterMinutes": {
+      "type": "number",
+      "title": "Nap after (minutes)",
+      "description": "Pets fall asleep after this many minutes without a prompt; 0 keeps them awake",
+      "default": 5
+    },
+    "reactions": {
+      "type": "boolean",
+      "title": "React to Claude",
+      "description": "A pet cheers when a turn finishes and looks worried when a tool fails",
+      "default": true
+    }
+  }
+}
