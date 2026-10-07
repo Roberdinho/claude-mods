@@ -46,3 +46,10 @@ In the config menu (or `pluginConfigs["prompt-polaroid"].options` in `settings.j
 claude plugin validate .
 claude plugin test .
 ```
+
+## Install
+
+```bash
+claude plugin marketplace add Roberdinho/claude-mods
+claude plugin install prompt-polaroid@rwoel-mods
+```

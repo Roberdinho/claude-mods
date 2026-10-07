@@ -3,7 +3,7 @@
 Claude Code mods. Install:
 
 ```bash
-claude plugin marketplace add <github-user>/claude-mods
+claude plugin marketplace add Roberdinho/claude-mods
 claude plugin install prompt-polaroid@rwoel-mods
 ```
 
