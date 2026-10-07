@@ -1,0 +1,48 @@
+{
+  "name": "prompt-polaroid",
+  "version": "0.1.0",
+  "description": "CodeSnap-style Polaroid snapshots of your Claude Code prompts: /polaroid",
+  "author": { "name": "R. Woeltjes" },
+  "license": "MIT",
+  "keywords": ["polaroid", "screenshot", "codesnap", "share", "prompt"],
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "theme": {
+      "type": "string",
+      "title": "Background",
+      "description": "Background behind the Polaroid",
+      "default": "clay",
+      "options": ["clay", "sunset", "ocean", "forest", "mono", "transparent"]
+    },
+    "outputDir": {
+      "type": "string",
+      "title": "Output folder",
+      "description": "Where PNG/SVG snapshots are saved (~ is your home folder)",
+      "default": "~/Pictures/Claude Polaroids"
+    },
+    "handle": {
+      "type": "string",
+      "title": "Handle",
+      "description": "Signature written on the caption, e.g. @you (leave empty for none)",
+      "default": ""
+    },
+    "showModel": {
+      "type": "boolean",
+      "title": "Show model",
+      "description": "Write the model name on the caption",
+      "default": true
+    },
+    "tilt": {
+      "type": "boolean",
+      "title": "Tilt",
+      "description": "Rotate the Polaroid slightly, like it was tossed on a table",
+      "default": true
+    },
+    "redactSecrets": {
+      "type": "boolean",
+      "title": "Redact secrets",
+      "description": "Mask API keys, tokens, passwords and e-mail addresses",
+      "default": true
+    }
+  }
+}
