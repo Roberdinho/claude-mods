@@ -1,6 +1,6 @@
 {
   "name": "coding-pet",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A Tamagotchi-style coding companion: it earns XP from edits, reads, passing tests and commits, levels up and evolves, and needs feeding, play and rest. /codepet",
   "author": { "name": "R. Woeltjes" },
   "license": "MIT",
