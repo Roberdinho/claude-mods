@@ -8,7 +8,8 @@ CodeSnap-style Polaroid snapshots of your Claude Code prompts, ready to share.
 
 | Command | What it snaps |
 | --- | --- |
-| `/polaroid` | your last prompt |
+| `/polaroid` or `/polaroid last` | your last prompt |
+| `/polaroid first` | the first prompt of the session |
 | `/polaroid 3` | your 3rd-last prompt |
 | `/polaroid "any text"` | whatever you type |
 

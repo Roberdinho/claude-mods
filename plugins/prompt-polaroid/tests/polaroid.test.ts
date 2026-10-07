@@ -1,6 +1,6 @@
 import { describe, expect, mock, test } from 'claude-code/testing'
 
-import { cleanPrompt, escapeXml, layout, redact, renderSvg, wrap } from '../hooks/polaroid'
+import { choosePrompt, cleanPrompt, escapeXml, layout, redact, renderSvg, wrap } from '../hooks/polaroid'
 import { copyImageArgv, fileUrl } from '../hooks/host'
 import { THEMES, themeAt, themeIndex } from '../hooks/themes'
 
@@ -47,6 +47,32 @@ describe('the picture', () => {
   })
 })
 
+describe('picking a prompt', () => {
+  const prompts = ['first one', 'second one', 'third one']
+
+  test('last, first and nth-last', () => {
+    expect(choosePrompt(prompts, '')).toEqual({ text: 'third one' })
+    expect(choosePrompt(prompts, 'last')).toEqual({ text: 'third one' })
+    expect(choosePrompt(prompts, 'first')).toEqual({ text: 'first one' })
+    expect(choosePrompt(prompts, 'FIRST')).toEqual({ text: 'first one' })
+    expect(choosePrompt(prompts, '2')).toEqual({ text: 'second one' })
+    expect(choosePrompt(prompts, '3')).toEqual({ text: 'first one' })
+  })
+
+  test('says how many prompts there are when the pick is out of range', () => {
+    const out = choosePrompt(prompts, '4')
+    expect('error' in out && out.error.includes('Only 3 prompts')).toBe(true)
+    expect('error' in choosePrompt(prompts, '0')).toBe(true)
+    expect('error' in choosePrompt([], 'first')).toBe(true)
+  })
+
+  test('anything else is the text itself, quotes dropped', () => {
+    expect(choosePrompt(prompts, '"first light"')).toEqual({ text: 'first light' })
+    expect(choosePrompt([], 'hello there')).toEqual({ text: 'hello there' })
+    expect('error' in choosePrompt([], '""')).toBe(true)
+  })
+})
+
 describe('privacy', () => {
   test('redacts keys, tokens and e-mail addresses', () => {
     const out = redact('key sk-ant-abcdefghijklmnopqrstu mail me@example.com password=hunter2 ghp_abcdefghijklmnopqrstuvwxyz')
@@ -72,6 +98,30 @@ describe('the host side', () => {
 })
 
 describe('the pane', () => {
+  test('/polaroid first snaps the first prompt of the session', async ($, on) => {
+    mock.clock(on)
+    on('ui.open', () => ({ value: { isPlaced: true } }))
+    on('session.messages', () => ({
+      value: [
+        { role: 'user', text: 'the very first prompt', toolUses: [] },
+        { role: 'assistant', text: 'ok', toolUses: [] },
+        { role: 'user', text: '/polaroid', toolUses: [] },
+        { role: 'user', text: 'a later prompt', toolUses: [] },
+      ],
+    }))
+    const ran = await $.command.run({ command: 'polaroid', args: 'first' })
+    expect(ran.text?.startsWith('Polaroid ready')).toBe(true)
+    const ui = await $.ui.mount({
+      plugin: 'prompt-polaroid',
+      surface: 'terminal',
+      component: 'Pane',
+      requestId: 'prompt-polaroid',
+      props: { title: 'Prompt Polaroid', isFocused: false, bodyColumns: 60 } as never,
+    })
+    expect((await ui.find({ type: 'Text', text: /^> / }))?.text.startsWith('> the very first prompt')).toBe(true)
+    await ui.unmount()
+  })
+
   test('/polaroid with text opens a pane that previews it on every surface', async ($, on) => {
     mock.clock(on)
     on('ui.open', () => ({ value: { isPlaced: true } }))

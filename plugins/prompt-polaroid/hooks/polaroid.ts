@@ -58,6 +58,37 @@ export const cleanPrompt = (text: string): string =>
     .replace(/\n{3,}/g, '\n\n')
     .trim()
 
+const unquote = (text: string): string => text.replace(/^(["'])([\s\S]*)\1$/, '$2')
+
+/** Whether `/polaroid <args>` is literal text rather than a pick (`last`, `first`, a number). */
+export const isCustomText = (args: string): boolean => !/^(|last|first|\d+)$/i.test(args.trim())
+
+/**
+ * Which text `/polaroid <args>` snaps, from the person's prompts oldest first:
+ * empty or `last` the newest, `first` the oldest, `n` the nth-last, anything
+ * else is the text itself (surrounding quotes dropped).
+ */
+export const choosePrompt = (prompts: readonly string[], args: string): { text: string } | { error: string } => {
+  const pick = args.trim()
+  if (isCustomText(pick)) {
+    const text = unquote(pick).trim()
+
+    return text === '' ? { error: 'Nothing to snap: the quotes were empty.' } : { text }
+  }
+  if (prompts.length === 0) return { error: 'No prompt to snap yet. Send one first, or try /polaroid "your text".' }
+  const word = pick.toLowerCase()
+  const index = word === 'first' ? 0 : prompts.length - (word === '' || word === 'last' ? 1 : Number(pick))
+  const text = prompts[index]
+  // `0` and numbers past the oldest prompt land outside the list.
+  if (text === undefined) {
+    const count = prompts.length === 1 ? '1 prompt' : `${prompts.length} prompts`
+
+    return { error: `Only ${count} in this session so far: try /polaroid first, or a number from 1 to ${prompts.length}.` }
+  }
+
+  return { text }
+}
+
 const length = (text: string): number => Array.from(text).length
 
 const hardSplit = (word: string, width: number): string[] => {

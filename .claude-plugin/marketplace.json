@@ -7,7 +7,7 @@
       "name": "prompt-polaroid",
       "source": "./plugins/prompt-polaroid",
       "description": "CodeSnap-style Polaroid snapshots of your Claude Code prompts: /polaroid",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "category": "productivity",
       "keywords": ["polaroid", "screenshot", "codesnap", "share"]
     }

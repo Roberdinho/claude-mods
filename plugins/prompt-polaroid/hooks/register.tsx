@@ -4,7 +4,7 @@ import type { EngineInterface, Register } from 'claude-code'
 import type { Saved, Snap } from '../types'
 import { BROWSERS, copyImageArgv, pageHtml, revealArgv, screenshotArgv, slashes } from './host'
 import type { Platform } from './host'
-import { cleanPrompt, redact, renderSvg } from './polaroid'
+import { choosePrompt, cleanPrompt, isCustomText, redact, renderSvg } from './polaroid'
 import { THEMES, themeAt, themeIndex } from './themes'
 
 const PANE = 'prompt-polaroid'
@@ -24,7 +24,6 @@ type Settings = {
 
 const pad = (n: number): string => String(n).padStart(2, '0')
 
-const unquote = (text: string): string => text.replace(/^(["'])([\s\S]*)\1$/, '$2')
 
 const isOwnWords = (text: string): boolean =>
   text !== '' && !text.startsWith('/') && !text.startsWith('<command-') && !text.startsWith('<local-command-')
@@ -49,16 +48,15 @@ async function tempDir($: EngineInterface): Promise<string> {
   return slashes(temp).replace(/\/$/, '')
 }
 
-/** The nth-last prompt the person typed (1 = the last), cleaned. */
-async function pickPrompt($: EngineInterface, nth: number): Promise<string | undefined> {
+/** The prompts the person typed this session, oldest first, cleaned. */
+async function listPrompts($: EngineInterface): Promise<string[]> {
   const messages = await $.session.messages()
-  if ('deny' in messages) return undefined
-  const prompts = messages
+  if ('deny' in messages) return []
+
+  return messages
     .filter(message => message.role === 'user')
     .map(message => cleanPrompt(message.text))
     .filter(isOwnWords)
-
-  return prompts.at(-nth)
 }
 
 async function snapOf($: EngineInterface, text: string): Promise<Snap> {
@@ -156,8 +154,8 @@ export const register: Register = (on, options) => {
   on('session.start', async ($, e, next) => {
     await $.command.register({
       name: 'polaroid',
-      description: 'Snap a prompt as a Polaroid: /polaroid [n | "text"]',
-      argumentHint: '[n | "text"]',
+      description: 'Snap a prompt as a Polaroid: /polaroid [last | first | n | "text"]',
+      argumentHint: '[last | first | n | "text"]',
     })
     await update($, themeAtom, () => themeIndex(options.theme))
 
@@ -166,12 +164,10 @@ export const register: Register = (on, options) => {
 
   on('command.run', { command: 'polaroid' }, async ($, e) => {
     const args = e.args.trim()
-    const isIndex = args === '' || /^\d+$/.test(args)
-    const raw = isIndex ? await pickPrompt($, args === '' ? 1 : Number(args)) : unquote(args)
-    if (raw === undefined || raw.trim() === '') {
-      return { text: 'No prompt to snap yet. Send one first, or try /polaroid "your text".' }
-    }
-    const snap = await snapOf($, settings.isRedacting ? redact(raw) : raw)
+    const prompts = isCustomText(args) ? [] : await listPrompts($)
+    const picked = choosePrompt(prompts, args)
+    if ('error' in picked) return { text: picked.error }
+    const snap = await snapOf($, settings.isRedacting ? redact(picked.text) : picked.text)
     await update($, snapAtom, () => snap)
     await update($, savedAtom, () => null)
     await $.ui.open({ id: PANE, title: 'Prompt Polaroid', focus: true })

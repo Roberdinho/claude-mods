@@ -1,6 +1,6 @@
 {
   "name": "prompt-polaroid",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "CodeSnap-style Polaroid snapshots of your Claude Code prompts: /polaroid",
   "author": { "name": "R. Woeltjes" },
   "license": "MIT",
