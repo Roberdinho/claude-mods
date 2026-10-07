@@ -1,0 +1,61 @@
+{
+  "name": "coding-pet",
+  "version": "0.1.0",
+  "description": "A Tamagotchi-style coding companion: it earns XP from edits, reads, passing tests and commits, levels up and evolves, and needs feeding, play and rest. /codepet",
+  "author": { "name": "R. Woeltjes" },
+  "license": "MIT",
+  "keywords": ["pet", "tamagotchi", "xp", "gamification", "coding pet", "fun"],
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "petName": {
+      "type": "string",
+      "title": "Pet name",
+      "description": "Your pet's name; empty picks one for its species",
+      "default": ""
+    },
+    "species": {
+      "type": "string",
+      "title": "Species",
+      "description": "What your pet hatches into",
+      "options": ["blob", "cat", "crab"],
+      "default": "blob"
+    },
+    "difficulty": {
+      "type": "string",
+      "title": "Difficulty",
+      "description": "How fast your pet gets hungry and sad: chill is half speed, hardcore double",
+      "options": ["chill", "normal", "hardcore"],
+      "default": "normal"
+    },
+    "showBand": {
+      "type": "boolean",
+      "title": "Pet above the prompt",
+      "description": "Show the pet, its XP and stats with feed, play and rest buttons above the prompt",
+      "default": true
+    },
+    "statusLine": {
+      "type": "boolean",
+      "title": "Status line entry",
+      "description": "Show the pet's name, level and happiness in the status line",
+      "default": false
+    },
+    "notifyNeeds": {
+      "type": "boolean",
+      "title": "Say when it needs you",
+      "description": "A toast when your pet gets hungry, tired or sad",
+      "default": true
+    },
+    "xpForReads": {
+      "type": "boolean",
+      "title": "XP for reading files",
+      "description": "Files Claude reads earn a little XP",
+      "default": true
+    },
+    "modelTool": {
+      "type": "boolean",
+      "title": "Let Claude check on the pet",
+      "description": "Gives Claude a pet_status tool, so it can answer how your pet is doing",
+      "default": false
+    }
+  }
+}
