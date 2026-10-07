@@ -1,0 +1,9 @@
+﻿{
+  "name": "session-tasks",
+  "version": "0.2.0",
+  "description": "A side panel of every session's running background tasks (shells, subagents, monitors, workflows) read from their transcripts, even in sessions marked Completed: /alltasks",
+  "author": { "name": "R. Woeltjes" },
+  "license": "MIT",
+  "keywords": ["tasks", "background", "sessions", "panel", "monitor"],
+  "types": "./types/index.d.ts"
+}

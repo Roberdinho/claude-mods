@@ -1,4 +1,4 @@
-{
+﻿{
   "name": "rwoel-mods",
   "owner": { "name": "R. Woeltjes" },
   "metadata": { "description": "Claude Code mods by R. Woeltjes" },
@@ -42,6 +42,14 @@
       "version": "0.1.0",
       "category": "productivity",
       "keywords": ["mods", "plugins", "commands", "launcher", "panel"]
+    },
+    {
+      "name": "session-tasks",
+      "source": "./plugins/session-tasks",
+      "description": "A side panel of every session's running background tasks (shells, subagents, monitors, workflows) read from their transcripts, even in sessions marked Completed: /alltasks",
+      "version": "0.2.0",
+      "category": "productivity",
+      "keywords": ["tasks", "background", "sessions", "panel", "monitor"]
     }
   ]
 }
