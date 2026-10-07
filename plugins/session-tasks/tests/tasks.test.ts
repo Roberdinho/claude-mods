@@ -1,7 +1,8 @@
 import { describe, expect, test } from 'claude-code/testing'
 
 import {
-  age, applyLines, newTrack, parsePids, parseRegistry, runningTasks, statusText, taskLabel,
+  age, applyLines, hotkey, newTrack, openerArgv, parsePids, parseRegistry, runningTasks, sessionLink,
+  statusText, taskLabel,
 } from '../hooks/tasks'
 
 const T0 = Date.parse('2026-10-07T12:00:00.000Z')
@@ -92,10 +93,21 @@ describe('sessions', () => {
   test('status line counts the busy sessions', () => {
     const task = { id: 'b', type: 'shell', description: 'x', startedAt: T0 }
     const s = (id: string, n: number) => ({
-      sessionId: id, title: id, cwd: '/x', status: 'idle', hasTranscript: true, tasks: Array(n).fill(task),
+      sessionId: id, title: id, cwd: '/x', status: 'idle', hasTranscript: true, link: null, tasks: Array(n).fill(task),
     })
     expect(statusText([s('a', 2), s('b', 1), s('c', 0)])).toBe('3 background tasks in 2 sessions · /alltasks')
     expect(statusText([s('c', 0)])).toBe(undefined)
+  })
+
+  test('desktop sessions get a link the OS opens in the app; terminal ones none', () => {
+    const r = { pid: 1, sessionId: 's', cwd: '/x', startedAt: 0 }
+    const link = sessionLink({ ...r, hostSessionId: 'local_f95b' })
+    expect(link).toBe('claude://claude.ai/epitaxy/local_f95b')
+    expect(sessionLink(r)).toBe(null)
+    expect(openerArgv('windows', link!)).toEqual(['rundll32.exe', 'url.dll,FileProtocolHandler', link])
+    expect(openerArgv('mac', link!)).toEqual(['open', link])
+    expect(hotkey(0)).toBe('1')
+    expect(hotkey(9)).toBe(undefined)
   })
 
   test('ages', () => {

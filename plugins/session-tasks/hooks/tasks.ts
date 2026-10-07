@@ -19,6 +19,25 @@ export type RegistryEntry = {
   name?: string
   status?: string
   kind?: string
+  /** The desktop app's id for the session; absent for a terminal session. */
+  hostSessionId?: string
+}
+
+/** The link that opens a desktop app session in the app, or null for a terminal session. */
+export function sessionLink(r: RegistryEntry): string | null {
+  return r.hostSessionId ? `claude://claude.ai/epitaxy/${encodeURIComponent(r.hostSessionId)}` : null
+}
+
+/** The command that hands a link to the app registered for its scheme. */
+export function openerArgv(platform: 'windows' | 'mac' | 'linux', link: string): string[] {
+  if (platform === 'windows') return ['rundll32.exe', 'url.dll,FileProtocolHandler', link]
+
+  return [platform === 'mac' ? 'open' : 'xdg-open', link]
+}
+
+/** One digit hotkey for each of the first nine rows. */
+export function hotkey(index: number): string | undefined {
+  return index < 9 ? String(index + 1) : undefined
 }
 
 export function parseRegistry(text: string): RegistryEntry | null {

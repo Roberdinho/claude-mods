@@ -4,6 +4,7 @@ A session can show as **Completed** while background tasks it started (shells, s
 
 - **Status line**: `3 background tasks in 2 sessions · /alltasks` whenever anything runs anywhere.
 - **`/alltasks`**: a side panel listing each session (by title) with its running tasks and when each started. Press `i` to also show idle sessions.
+- **Open**: each desktop app session in the panel has an Open button (keys `1`–`9`) that switches the app to it. It hands the session's `claude://claude.ai/epitaxy/<id>` link to the OS (`rundll32` on Windows, `open` on macOS, `xdg-open` on Linux). Terminal sessions have no such link and no button.
 
 ## How it works
 

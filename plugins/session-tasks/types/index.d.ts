@@ -22,6 +22,8 @@ export type SessionView = {
   tasks: Task[]
   /** False when no transcript was found for the session. */
   hasTranscript: boolean
+  /** Opens the session in the desktop app; null for a terminal session. */
+  link: string | null
 }
 
 declare module 'claude-code' {

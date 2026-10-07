@@ -3,8 +3,8 @@ import type { EngineInterface, Register } from 'claude-code'
 
 import type { SessionView } from '../types'
 import {
-  LINE_PATTERN, TICK_MS, age, applyLines, label, newTrack, parsePids, parseRegistry, runningTasks,
-  sameView, sortSessions, statusText, taskLabel,
+  LINE_PATTERN, TICK_MS, age, applyLines, hotkey, label, newTrack, openerArgv, parsePids, parseRegistry,
+  runningTasks, sameView, sessionLink, sortSessions, statusText, taskLabel,
 } from './tasks'
 import type { RegistryEntry, Track } from './tasks'
 
@@ -146,6 +146,7 @@ async function refresh($: EngineInterface) {
         status: r.status ?? 'unknown',
         tasks: runningTasks(f.track, r.startedAt, now),
         hasTranscript: f.file !== null,
+        link: sessionLink(r),
       })
     }
     for (const id of [...followed.keys()]) if (!live.some(r => r.sessionId === id)) followed.delete(id)
@@ -166,6 +167,16 @@ async function refresh($: EngineInterface) {
     if ((await read($, errorAtom)) !== message) await update($, errorAtom, () => message)
   } finally {
     refreshing = false
+  }
+}
+
+/** Shows a session in the desktop app by handing its link to the OS. */
+async function openSession($: EngineInterface, s: SessionView) {
+  if (s.link === null) return
+  const platform = (await isWindows($)) ? 'windows' : (await $.env.get('HOME'))?.startsWith('/Users/') ? 'mac' : 'linux'
+  const run = await $.process.run(openerArgv(platform, s.link)).catch((err: unknown) => err)
+  if (run instanceof Error || (typeof run === 'object' && run !== null && 'exitCode' in run && run.exitCode !== 0)) {
+    $.ui.toast(`Could not open ${label(s)}; pick it in the sidebar`)
   }
 }
 
@@ -213,9 +224,14 @@ export const register: Register = on => {
         {shown.length === 0 && error === null && (
           <Text dimColor>{all.length === 0 ? 'Reading the sessions…' : 'No background tasks in any session.'}</Text>
         )}
-        {shown.map(s => (
+        {shown.map((s, i) => (
           <Box key={`s:${s.sessionId}`} flexDirection="column" marginTop={1}>
-            <Text bold>{`${label(s)}${s.sessionId === self ? '  (this session)' : ''}`}</Text>
+            <Box>
+              <Text bold>{`${label(s)}${s.sessionId === self ? '  (this session)' : ''}  `}</Text>
+              {s.link !== null && s.sessionId !== self && (
+                <Button key={`open:${s.sessionId}`} label="Open" hotkey={hotkey(i)} plain onPress={() => openSession($, s)} />
+              )}
+            </Box>
             <Text dimColor>{`${s.status} · ${s.cwd}${s.hasTranscript ? '' : ' · no transcript found'}`}</Text>
             {s.tasks.length === 0 && <Text dimColor>  nothing in the background</Text>}
             {s.tasks.map(t => (
