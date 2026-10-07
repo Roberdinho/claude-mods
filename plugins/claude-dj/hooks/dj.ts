@@ -57,7 +57,10 @@ export function parseLine(line: string): WatcherLine | undefined {
       album: text(o.album),
       status: text(o.status),
       position: num(o.position),
+      positionAt: num(o.positionAt),
       duration: num(o.duration),
+      cover: text(o.cover),
+      coverJpg: text(o.coverJpg),
     },
   }
 }
@@ -71,6 +74,33 @@ export function splitLines(buffer: string): { lines: string[]; rest: string } {
 }
 
 export const isPlaying = (track: Track | null): boolean => track?.status === 'Playing'
+
+/** Where the track is now: the reported position, moved on by the time since while it plays. */
+export function positionNow(track: Track, now: number): number {
+  const moved = isPlaying(track) && track.positionAt > 0 ? Math.max(0, (now - track.positionAt) / 1000) : 0
+  const at = track.position + moved
+
+  return track.duration > 0 ? Math.min(track.duration, at) : at
+}
+
+/** `━━━━●──────`, `width` cells long, the knob where `position` is of `duration`. */
+export function progressBar(position: number, duration: number, width: number): string {
+  const cells = Math.max(5, Math.floor(width))
+  const share = duration > 0 ? Math.min(1, Math.max(0, position / duration)) : 0
+  const done = Math.round(share * (cells - 1))
+
+  return `${'━'.repeat(done)}●${'─'.repeat(cells - 1 - done)}`
+}
+
+/** The cover as an SVG of `size` px with rounded corners; a note on a plain square without one. */
+export function coverSvg(jpegBase64: string | undefined, size: number): string {
+  const head = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 100 100">`
+  if (jpegBase64 === undefined) {
+    return `${head}<rect width="100" height="100" rx="8" fill="#8884"/><text x="50" y="64" font-size="44" text-anchor="middle" fill="#8888">♪</text></svg>`
+  }
+
+  return `${head}<defs><clipPath id="c"><rect width="100" height="100" rx="8"/></clipPath></defs><image href="data:image/jpeg;base64,${jpegBase64}" width="100" height="100" clip-path="url(#c)" preserveAspectRatio="xMidYMid slice"/></svg>`
+}
 
 export function formatTime(seconds: number): string {
   const s = Math.max(0, Math.round(seconds))

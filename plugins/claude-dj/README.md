@@ -12,6 +12,11 @@ that shows up in the Windows media flyout.
 - **Now-playing band** above the prompt, with previous / play-pause / next buttons and
   mute / volume down / volume up. **✕** hides it (a `♪ Title — Artist` status line entry
   takes its place); `/dj show` brings it back. It stays hidden across sessions until you do.
+- **`/music` pane**: the cover art, title, artist and album, a progress bar that moves while
+  the track plays (`1:10 ━━━━━━●────────── 4:03`), and bigger controls with hotkeys while the
+  pane has focus: `k` play/pause, `p` / `n` previous / next, `m` mute, `d` / `u` volume
+  down / up, `l` like (Spotify). The cover shows as a picture in the desktop app and VS Code;
+  in the terminal it does in kitty and Ghostty, and is left out elsewhere.
 - **Commands** (they also work while Claude is busy):
 
 | Command | Does |
@@ -23,6 +28,7 @@ that shows up in the Windows media flyout.
 | `/vol 40`, `/vol +5`, `/vol -5`, `/vol up`, `/vol down` | set or change the volume |
 | `/vol mute`, `/vol unmute` (or `/dj mute`, `/dj vol 40`) | mute and unmute |
 | `/dj hide`, `/dj show` | hide or show the band |
+| `/music` | open the Now playing pane |
 
 - **Music tools for Claude**: ask *"what's playing?"*, *"skip this one"*, *"turn it down
   a bit"* or *"pause the music while you run the tests"*. Claude gets `now_playing`,
@@ -76,6 +82,10 @@ change. Windows doesn't expose a per-app volume for another app's audio session 
 Windows 11 builds, so the mod can't change only the browser's or player's slider in the
 volume mixer.
 
+The pane's cover comes from the same media session (the artwork the app hands Windows; for a
+YouTube video that's its thumbnail, cropped to a square). Covers are kept as small temporary
+files and replaced when the track changes.
+
 The watcher exits with the session, or by itself two minutes after the session stops
 sending a heartbeat.
 
@@ -98,7 +108,6 @@ In the config menu (or `pluginConfigs["claude-dj"].options` in `settings.json`):
 
 ## Roadmap
 
-- `/music` pane with cover art and progress
 - macOS (`nowplaying-cli`) and Linux (`playerctl`)
 - YouTube Music desktop bridge (th-ch/youtube-music API server, ytmdesktop Companion):
   search, queue, like

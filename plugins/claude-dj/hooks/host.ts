@@ -55,6 +55,34 @@ namespace ClaudeDj {
     void GetMute([MarshalAs(UnmanagedType.Bool)] out bool mute);
   }
 
+  // A media session's thumbnail as bytes. Windows PowerShell cannot call the
+  // WinRT stream it gets, so read it as a classic COM IStream instead.
+  public static class Thumbnail {
+    [DllImport("shcore.dll")]
+    static extern int CreateStreamOverRandomAccessStream([MarshalAs(UnmanagedType.IUnknown)] object stream, ref Guid iid, out System.Runtime.InteropServices.ComTypes.IStream result);
+
+    public static byte[] ReadAll(object randomAccessStream) {
+      Guid iid = new Guid("0000000c-0000-0000-C000-000000000046");
+      System.Runtime.InteropServices.ComTypes.IStream stream;
+      Marshal.ThrowExceptionForHR(CreateStreamOverRandomAccessStream(randomAccessStream, ref iid, out stream));
+      var bytes = new System.IO.MemoryStream();
+      var buffer = new byte[65536];
+      IntPtr count = Marshal.AllocHGlobal(4);
+      try {
+        while (bytes.Length < 8 * 1024 * 1024) {
+          stream.Read(buffer, buffer.Length, count);
+          int n = Marshal.ReadInt32(count);
+          if (n <= 0) break;
+          bytes.Write(buffer, 0, n);
+        }
+      } finally {
+        Marshal.FreeHGlobal(count);
+        Marshal.ReleaseComObject(stream);
+      }
+      return bytes.ToArray();
+    }
+  }
+
   // The default output device's volume: what the volume keys and the taskbar flyout change.
   public static class Volume {
     static Guid none = Guid.Empty;
@@ -108,10 +136,73 @@ $Manager = [Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManag
 $Props = [Windows.Media.Control.GlobalSystemMediaTransportControlsSessionMediaProperties, Windows.Media.Control, ContentType = WindowsRuntime]
 $mgr = Await ($Manager::RequestAsync()) $Manager
 
+$Stream = [Windows.Storage.Streams.IRandomAccessStreamWithContentType, Windows.Storage.Streams, ContentType = WindowsRuntime]
+Add-Type -AssemblyName System.Drawing
+
 $commands = Join-Path $Dir 'commands'
 $heartbeat = Join-Path $Dir 'heartbeat'
+$covers = Join-Path $Dir 'covers'
 New-Item -ItemType Directory -Force -Path $commands | Out-Null
+New-Item -ItemType Directory -Force -Path $covers | Out-Null
 $script:chosen = ''
+# The cover of the track shown: a PNG for the terminal, a small JPEG for the
+# desktop's SVG. A new track drops the old files; a missing thumbnail (apps
+# often send it after the title) is asked for again for a few seconds.
+$script:coverFor = ''
+$script:cover = ''
+$script:coverJpg = ''
+$script:coverTries = 0
+$script:coverCount = 0
+
+# The centre square of the image, scaled to size x size.
+function SaveSquare($image, [string]$path, [int]$size, $format) {
+  $side = [Math]::Min($image.Width, $image.Height)
+  $from = New-Object System.Drawing.Rectangle ([int](($image.Width - $side) / 2)), ([int](($image.Height - $side) / 2)), $side, $side
+  $to = New-Object System.Drawing.Rectangle 0, 0, $size, $size
+  $bitmap = New-Object System.Drawing.Bitmap $size, $size
+  $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+  try {
+    $graphics.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
+    $graphics.DrawImage($image, $to, $from, [System.Drawing.GraphicsUnit]::Pixel)
+    $bitmap.Save($path, $format)
+  } finally {
+    $graphics.Dispose()
+    $bitmap.Dispose()
+  }
+}
+
+function UpdateCover($properties, [string]$trackKey) {
+  if ($trackKey -ne $script:coverFor) {
+    foreach ($old in @($script:cover, $script:coverJpg)) {
+      if ($old -ne '') { Remove-Item -Force $old -ErrorAction SilentlyContinue }
+    }
+    $script:coverFor = $trackKey
+    $script:cover = ''
+    $script:coverJpg = ''
+    $script:coverTries = 0
+  }
+  if ($script:cover -ne '' -or $script:coverTries -ge 20) { return }
+  $script:coverTries++
+  if ($null -eq $properties.Thumbnail) { return }
+  $bytes = [ClaudeDj.Thumbnail]::ReadAll((Await ($properties.Thumbnail.OpenReadAsync()) $Stream))
+  $stream = New-Object System.IO.MemoryStream (, $bytes)
+  try {
+    $image = [System.Drawing.Image]::FromStream($stream)
+    try {
+      $script:coverCount++
+      $png = Join-Path $covers "cover-$($script:coverCount).png"
+      $jpg = Join-Path $covers "cover-$($script:coverCount).jpg"
+      SaveSquare $image $png 256 ([System.Drawing.Imaging.ImageFormat]::Png)
+      SaveSquare $image $jpg 160 ([System.Drawing.Imaging.ImageFormat]::Jpeg)
+      $script:cover = $png
+      $script:coverJpg = $jpg
+    } finally {
+      $image.Dispose()
+    }
+  } finally {
+    $stream.Dispose()
+  }
+}
 
 function Emit($value) {
   [Console]::Out.WriteLine(($value | ConvertTo-Json -Compress))
@@ -198,6 +289,11 @@ while ($true) {
       $p = Await ($session.TryGetMediaPropertiesAsync()) $Props
       $status = "$($session.GetPlaybackInfo().PlaybackStatus)"
       $t = $session.GetTimelineProperties()
+      $trackKey = "$($session.SourceAppUserModelId)|$($p.Title)|$($p.Artist)|$($p.AlbumTitle)"
+      try { UpdateCover $p $trackKey } catch {}
+      # The position is as of LastUpdatedTime: the mod moves it on from there.
+      $positionAt = 0
+      if ($t.LastUpdatedTime.Year -gt 2000) { $positionAt = $t.LastUpdatedTime.ToUnixTimeMilliseconds() }
       $state = [ordered]@{
         app = $session.SourceAppUserModelId
         title = "$($p.Title)"
@@ -205,11 +301,14 @@ while ($true) {
         album = "$($p.AlbumTitle)"
         status = $status
         position = [math]::Round($t.Position.TotalSeconds, 1)
+        positionAt = $positionAt
         duration = [math]::Round($t.EndTime.TotalSeconds, 1)
+        cover = $script:cover
+        coverJpg = $script:coverJpg
         volume = $volume
         muted = $muted
       }
-      $key = "$($state.app)|$($state.title)|$($state.artist)|$($state.album)|$status|$($state.duration)|$volume|$muted"
+      $key = "$trackKey|$status|$($state.duration)|$positionAt|$($script:cover)|$volume|$muted"
     }
     if ($key -ne $last) {
       Emit $state

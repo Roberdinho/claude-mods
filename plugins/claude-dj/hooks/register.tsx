@@ -1,5 +1,5 @@
 import { atom, read, update } from 'claude-code'
-import type { EngineInterface, Register } from 'claude-code'
+import type { EngineInterface, Register, Timer } from 'claude-code'
 
 import type { Player, SpotifyStatus } from '../types'
 import {
@@ -7,10 +7,14 @@ import {
   PAST,
   actionOf,
   appName,
+  coverSvg,
   describe,
   describeVolume,
+  formatTime,
   isPlaying,
   parseLine,
+  positionNow,
+  progressBar,
   splitLines,
   trackLine,
   volumeCommand,
@@ -74,6 +78,9 @@ const SETUP = [
 const playerAtom = atom({ plugin: 'claude-dj', key: 'player' } as const, { kind: 'starting' })
 const spotifyAtom = atom({ plugin: 'claude-dj', key: 'spotify' } as const, null)
 const hiddenAtom = atom({ plugin: 'claude-dj', key: 'isHidden' } as const, false)
+const tickAtom = atom({ plugin: 'claude-dj', key: 'tick' } as const, 0)
+/** The /music pane's id. */
+const PANE = 'claude-dj'
 /** Where `$.store` remembers that the band was hidden, so it stays hidden in the next session. */
 const HIDDEN_STORE = 'bandHidden'
 const DJ_HINT = '[play | pause | next | prev | vol … | hide | show]'
@@ -102,7 +109,20 @@ const live: {
   waiters: ((player: Player) => void)[]
   /** The Spotify app's Client ID from the settings; empty when Spotify is not set up. */
   clientId: string
-} = { showBand: true, step: 10, workDir: undefined, sent: 0, waiters: [], clientId: '' }
+  /** The 1 s timer that moves the pane's progress bar; runs only while the pane is open. */
+  ticker: Timer | undefined
+  /** The cover JPEG last read for the pane, so a tick does not read the file again. */
+  cover: { path: string; base64: string } | undefined
+} = {
+  showBand: true,
+  step: 10,
+  workDir: undefined,
+  sent: 0,
+  waiters: [],
+  clientId: '',
+  ticker: undefined,
+  cover: undefined,
+}
 
 /** Without the band (turned off, or hidden), a status line entry says what plays. */
 async function refreshStatus($: EngineInterface, player: Player): Promise<void> {
@@ -488,6 +508,45 @@ async function likeFromBand($: EngineInterface): Promise<void> {
   $.ui.toast(await spotifyLike($))
 }
 
+// The /music pane: cover, progress bar, controls.
+
+/** One tick: moves the progress bar while music plays; stops itself once the pane is closed. */
+async function tick($: EngineInterface): Promise<void> {
+  const isOpen = (await $.ui.panes()).some(pane => pane.id === PANE)
+  if (!isOpen) {
+    live.ticker?.cancel()
+    live.ticker = undefined
+    return
+  }
+  const player = await read($, playerAtom)
+  if (player.kind === 'ready' && isPlaying(player.track)) await update($, tickAtom, n => n + 1)
+}
+
+function startTicker($: EngineInterface): void {
+  live.ticker ??= $.clock.every(1_000, () => void tick($).catch(() => undefined))
+}
+
+async function openMusic($: EngineInterface): Promise<string> {
+  await $.ui.open({ id: PANE, title: 'Now playing', focus: true })
+  startTicker($)
+
+  return 'Now playing pane opened.'
+}
+
+/** The cover JPEG as base64, read once per file; undefined when there is none or it is gone. */
+async function coverBase64($: EngineInterface, path: string): Promise<string | undefined> {
+  if (path === '') return undefined
+  if (live.cover?.path === path) return live.cover.base64
+  try {
+    const { base64 } = await $.fs.read(path, { as: 'bytes' })
+    live.cover = { path, base64 }
+
+    return base64
+  } catch {
+    return undefined
+  }
+}
+
 async function heartbeat($: EngineInterface): Promise<void> {
   if (live.workDir !== undefined) await $.fs.write(`${live.workDir}/heartbeat`, 'alive')
 }
@@ -500,6 +559,11 @@ export const register: Register = (on, options) => {
 
   on('session.start', async ($, e, next) => {
     const started = await next(e)
+    await $.command.register({
+      name: 'music',
+      description: 'Open the Now playing pane: cover art, progress bar and controls',
+      immediate: true,
+    })
     await $.command.register({
       name: 'spotify',
       description: 'Spotify: play a song, album or playlist, queue, like, switch device, sign in',
@@ -597,6 +661,8 @@ export const register: Register = (on, options) => {
     await setPlayer($, { kind: 'starting' })
     await startWatcher($, 0)
     $.clock.every(HEARTBEAT_MS, () => void heartbeat($).catch(() => undefined))
+    // A reload while the pane stayed open: keep its progress bar moving.
+    if ((await $.ui.panes()).some(pane => pane.id === PANE)) startTicker($)
 
     return started
   })
@@ -653,6 +719,85 @@ export const register: Register = (on, options) => {
   })
 
   on('command.run', { command: 'spotify' }, async ($, e) => ({ text: await spotifyCommand($, e.args) }))
+
+  on('command.run', { command: 'music' }, async $ => ({ text: await openMusic($) }))
+
+  on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
+    const ui = $.ui.resolve(e)
+    const { Box, Button, Text } = ui
+    // Read so each tick draws the pane again and the bar moves.
+    await read($, tickAtom)
+    const player = await read($, playerAtom)
+    if (player.kind === 'unavailable') return <Text dimColor>{`Music control is unavailable: ${player.reason}`}</Text>
+    if (player.kind === 'starting') return <Text dimColor>Looking for music…</Text>
+    const track = player.track
+    if (track === null) {
+      return <Text dimColor>Nothing is playing. Start something in YouTube Music, Spotify or any player.</Text>
+    }
+    const playing = isPlaying(track)
+    const sound = player.volume
+    const canLike = appName(track.app) === 'Spotify' && (await read($, spotifyAtom)) !== null
+    const columns = e.props.bodyColumns
+    const isWide = columns >= 64
+    const alt = `Cover of ${trackLine(track)}`
+
+    let cover
+    if (e.surface === 'terminal') {
+      // Pixels where the terminal draws images (kitty, Ghostty); the alt text elsewhere.
+      if ('Image' in ui && track.cover !== '') {
+        const size = isWide ? 20 : Math.min(20, columns - 2)
+        cover = <ui.Image source={{ file: track.cover, format: 'png' }} columns={size} rows={Math.round(size / 2)} alt="♪" />
+      }
+    } else if ('Svg' in ui) {
+      cover = <ui.Svg source={coverSvg(await coverBase64($, track.coverJpg), 140)} alt={alt} width={140} height={140} />
+    }
+
+    const position = positionNow(track, await $.clock.now())
+    const hasTime = track.duration > 0
+    const barWidth = Math.max(10, (isWide && cover !== undefined ? columns - 26 : columns) - 14)
+
+    const info = (
+      <Box flexDirection="column" gap={0}>
+        <Text bold>{trackLine({ ...track, artist: '' }, 70)}</Text>
+        {track.artist !== '' && <Text>{track.artist}</Text>}
+        <Text dimColor>{[track.album, appName(track.app)].filter(part => part !== '').join(' · ')}</Text>
+        {hasTime && (
+          <Text dimColor={!playing}>
+            {`${formatTime(position)} ${progressBar(position, track.duration, barWidth)} ${formatTime(track.duration)}`}
+          </Text>
+        )}
+        <Box flexDirection="row" gap={1} flexWrap="wrap">
+          <Button key="pane-prev" label="⏮" hotkey="p" onPress={() => void send($, 'previous')} />
+          <Button
+            key="pane-toggle"
+            label={playing ? '⏸ Pause' : '▶ Play'}
+            hotkey="k"
+            variant="primary"
+            onPress={() => void send($, 'toggle')}
+          />
+          <Button key="pane-next" label="⏭" hotkey="n" onPress={() => void send($, 'next')} />
+          {canLike && <Button key="pane-like" label="♥ Like" hotkey="l" onPress={() => likeFromBand($)} />}
+        </Box>
+        {sound !== null && (
+          <Box flexDirection="row" gap={1}>
+            <Button key="pane-mute" label={sound.muted ? '🔇' : '🔊'} hotkey="m" onPress={() => void send($, 'togglemute')} />
+            <Button key="pane-voldown" label="−" hotkey="d" onPress={() => void send($, `volume -${live.step}`)} />
+            <Text dimColor={sound.muted}>{sound.muted ? 'muted' : `${sound.level}%`}</Text>
+            <Button key="pane-volup" label="+" hotkey="u" onPress={() => void send($, `volume +${live.step}`)} />
+          </Box>
+        )}
+      </Box>
+    )
+
+    return cover === undefined ? (
+      info
+    ) : (
+      <Box flexDirection={isWide ? 'row' : 'column'} gap={2}>
+        {cover}
+        {info}
+      </Box>
+    )
+  })
 
   /** The `type` a Spotify tool was given, or track. */
   const kindIn = (input: { type?: unknown }): Kind => KINDS.find(one => one === input.type) ?? 'track'

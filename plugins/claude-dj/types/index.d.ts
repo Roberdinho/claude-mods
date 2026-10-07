@@ -6,9 +6,15 @@ export type Track = {
   album: string
   /** `Playing`, `Paused`, `Stopped`, ... as the OS reports it. */
   status: string
-  /** Seconds, as of the moment the watcher reported the track. */
+  /** Seconds, as of `positionAt`. */
   position: number
+  /** When the app last set `position`, ms since the epoch; 0 when unknown. */
+  positionAt: number
   duration: number
+  /** The cover as a PNG file (for the terminal), or ''. */
+  cover: string
+  /** The cover as a small JPEG file (for the SVG the other surfaces draw), or ''. */
+  coverJpg: string
 }
 
 /** The default output device's volume, as the volume keys change it. */
@@ -38,6 +44,8 @@ declare module 'claude-code' {
       spotify: SpotifyStatus | null
       /** The band hidden with ✕ or /dj hide; kept in `$.store` across sessions. */
       isHidden: boolean
+      /** Bumped every second while the /music pane is open and music plays, so the progress bar moves. */
+      tick: number
     }
   }
 }

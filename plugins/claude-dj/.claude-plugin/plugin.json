@@ -1,7 +1,7 @@
 {
   "name": "claude-dj",
-  "version": "0.3.0",
-  "description": "Control YouTube Music, Spotify or anything else playing from Claude Code: a now-playing band, /play /pause /next /prev /vol, Spotify search, play, queue and like, and music tools for Claude",
+  "version": "0.4.0",
+  "description": "Control YouTube Music, Spotify or anything else playing from Claude Code: a now-playing band, a /music pane with cover art and progress, /play /pause /next /prev /vol, Spotify search, play, queue and like, and music tools for Claude",
   "author": { "name": "R. Woeltjes" },
   "license": "MIT",
   "keywords": ["music", "youtube music", "spotify", "media", "now playing", "dj"],

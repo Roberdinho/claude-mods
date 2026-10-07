@@ -3,10 +3,13 @@ import { describe, expect, mock, test } from 'claude-code/testing'
 import {
   actionOf,
   appName,
+  coverSvg,
   describe as describeTrack,
   describeVolume,
   formatTime,
   parseLine,
+  positionNow,
+  progressBar,
   splitLines,
   trackLine,
   volumeCommand,
@@ -21,7 +24,10 @@ const SONG = {
   album: "Hurry Up, We're Dreaming",
   status: 'Playing',
   position: 61,
+  positionAt: 0,
   duration: 243,
+  cover: '',
+  coverJpg: '',
 }
 
 const line = (value: unknown): string => `${JSON.stringify(value)}\n`
@@ -55,7 +61,18 @@ describe('reading the watcher', () => {
   test('fills in missing fields', () => {
     expect(parseLine('{"title":"Only a title"}')).toEqual({
       volume: null,
-      track: { app: '', title: 'Only a title', artist: '', album: '', status: '', position: 0, duration: 0 },
+      track: {
+        app: '',
+        title: 'Only a title',
+        artist: '',
+        album: '',
+        status: '',
+        position: 0,
+        positionAt: 0,
+        duration: 0,
+        cover: '',
+        coverJpg: '',
+      },
     })
   })
 
@@ -97,6 +114,26 @@ describe('words', () => {
     expect(volumeCommand({ kind: 'unmute' })).toBe('unmute')
     expect(describeVolume({ level: 30, muted: false })).toBe('The volume is 30%.')
     expect(describeVolume({ level: 30, muted: true })).toBe('The volume is muted (30% when unmuted).')
+  })
+
+  test('the progress bar moves on from where the app last said', () => {
+    const at = { ...SONG, position: 60, positionAt: 1_000_000 }
+    expect(positionNow(at, 1_010_000)).toBe(70)
+    expect(positionNow({ ...at, status: 'Paused' }, 1_010_000)).toBe(60)
+    expect(positionNow({ ...at, positionAt: 0 }, 1_010_000)).toBe(60)
+    expect(positionNow(at, 9_000_000)).toBe(243)
+    expect(progressBar(0, 100, 11)).toBe('●──────────')
+    expect(progressBar(50, 100, 11)).toBe('━━━━━●─────')
+    expect(progressBar(100, 100, 11)).toBe('━━━━━━━━━━●')
+    expect(progressBar(5, 0, 6)).toBe('●─────')
+  })
+
+  test('the cover SVG embeds the JPEG, or draws a note without one', () => {
+    const svg = coverSvg('QUJD', 140)
+    expect(svg).toContain('href="data:image/jpeg;base64,QUJD"')
+    expect(svg).toContain('width="140"')
+    expect(coverSvg(undefined, 140)).toContain('♪')
+    expect(coverSvg(undefined, 140).includes('<image')).toBe(false)
   })
 
   test('times, apps and lines', () => {
@@ -217,5 +254,65 @@ describe('the session', () => {
     const muted = await $.tool.call({ tool: 'mcp__claude-dj__music_volume', mute: true } as never)
     expect(Object.values(files)).toContain('mute')
     expect(String(muted.result)).toBe('Muted. The volume is muted (25% when unmuted).')
+  })
+
+  test('/music opens the pane: cover, a moving progress bar, controls', async ($, on) => {
+    mock.env(on, { OS: 'Windows_NT', TEMP: 'C:\\Temp' })
+    mock.store(on)
+    const clock = mock.clock(on, { now: 1_760_000_000_000 })
+    const playing = { ...SONG, position: 60, positionAt: 1_760_000_000_000, cover: 'C:/covers/cover-1.png', coverJpg: 'C:/covers/cover-1.jpg' }
+    const opened: string[] = []
+    on('fs.write', async () => ({ value: undefined }))
+    on('fs.read', (_$, e) => (e.path.endsWith('.jpg') ? { value: { base64: 'SlBFRw==' } } : { value: '' }))
+    on('session.start', (_$, e) => ({ cwd: e.cwd }))
+    on('command.register', (_$, e) => ({ value: { command: e.name } }))
+    on('tool.register', (_$, e) => ({ value: { tool: `mcp__claude-dj__${e.name}` } }))
+    on('ui.render', { component: 'AbovePrompt' }, () => ({ type: 'Box', props: {}, children: [] }))
+    on('ui.status', () => ({ value: undefined }))
+    on('ui.toast', () => ({ value: undefined }))
+    on('ui.open', (_$, e) => {
+      opened.push(e.id)
+      return { value: { isPlaced: true as const } }
+    })
+    on('ui.panes', () => ({
+      value: opened.map(id => ({ id, title: 'Now playing', isShown: true, isFocused: true, isPlaced: true })),
+    }))
+    let sent = false
+    on('process.spawn', async function* () {
+      if (!sent) {
+        sent = true
+        yield { stream: 'stdout' as const, text: line({ ...playing, volume: 40, muted: false }) }
+      }
+      await new Promise<void>(() => undefined)
+    })
+
+    await $.session.start({ cwd: 'C:/work' } as never)
+    let said = ''
+    for (let tries = 0; tries < 50 && !said.includes('Playing:'); tries++) {
+      said = String((await $.tool.call({ tool: 'mcp__claude-dj__now_playing' } as never)).result)
+    }
+
+    const ran = await $.command.run({ command: 'music', args: '' } as never)
+    expect(String(ran.text)).toBe('Now playing pane opened.')
+    expect(opened).toEqual(['claude-dj'])
+
+    const PANE = { component: 'Pane', requestId: 'claude-dj' } as const
+    const props = { title: 'Now playing', isFocused: true, bodyColumns: 100, placement: 'dock' } as never
+    const desktop = await $.ui.mount({ plugin: 'claude-dj', surface: 'desktop', ...PANE, props })
+    expect(await desktop.find({ type: 'Text', text: 'Midnight City' })).toBeDefined()
+    expect(await desktop.find({ type: 'Text', text: /^1:00 ━+●─+ 4:03$/ })).toBeDefined()
+    expect(JSON.stringify(await desktop.drawn())).toContain('data:image/jpeg;base64,SlBFRw==')
+    expect(await desktop.find({ key: 'pane-toggle' })).toBeDefined()
+    expect(await desktop.find({ type: 'Text', text: '40%' })).toBeDefined()
+
+    // Ten seconds on, the ticker has drawn the pane again with the bar moved.
+    await clock.advance(10_000)
+    expect(await desktop.find({ type: 'Text', text: /^1:10 ━+●─+ 4:03$/ })).toBeDefined()
+    await desktop.unmount()
+
+    const terminal = await $.ui.mount({ plugin: 'claude-dj', surface: 'terminal', ...PANE, props })
+    expect(await terminal.find({ type: 'Text', text: 'Midnight City' })).toBeDefined()
+    expect(await terminal.find({ key: 'pane-next' })).toBeDefined()
+    await terminal.unmount()
   })
 })
