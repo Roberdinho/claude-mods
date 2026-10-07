@@ -1,0 +1,29 @@
+{
+  "name": "claude-dj",
+  "version": "0.2.0",
+  "description": "Control YouTube Music, Spotify or anything else playing from Claude Code: a now-playing band, /play /pause /next /prev /vol, and music tools for Claude",
+  "author": { "name": "R. Woeltjes" },
+  "license": "MIT",
+  "keywords": ["music", "youtube music", "spotify", "media", "now playing", "dj"],
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "showBand": {
+      "type": "boolean",
+      "title": "Now-playing band",
+      "description": "Show the track and controls above the prompt (off: a status line entry instead)",
+      "default": true
+    },
+    "volumeStep": {
+      "type": "number",
+      "title": "Volume step",
+      "description": "How many percent the band's + and - buttons and /vol up and down move the volume",
+      "default": 10
+    },
+    "musicTools": {
+      "type": "boolean",
+      "title": "Music tools for Claude",
+      "description": "Let Claude see what is playing and play, pause or skip when you ask it to",
+      "default": true
+    }
+  }
+}
