@@ -76,6 +76,27 @@ export type CodingPetView = {
   achievements: string[]
 }
 
+/**
+ * What the panel shows, and nothing more: numbers as drawn, lists as listed.
+ * The panel reads this alone, and it is written only when it differs, so the
+ * panel redraws (and its picture reloads) only when something visible changes.
+ */
+export type CodingPetPaneView = {
+  name: string
+  species: string
+  stage: CodingPetStage
+  mood: CodingPetMood
+  level: number
+  xp: number
+  xpToNext: number
+  totalXp: number
+  stats: CodingPetStats
+  today: { label: string; xp: number }[]
+  totals: { label: string; count: number }[]
+  achievements: { id: string; title: string; emoji: string; description: string; isEarned: boolean }[]
+  foods: { id: string; emoji: string }[]
+}
+
 /** Changes to the stats, applied as given (negative lowers). */
 export type CodingPetStatDelta = Partial<CodingPetStats>
 
@@ -172,6 +193,8 @@ declare module 'claude-code' {
       isPaneOpen: boolean
       /** `/codepet close` put the strip above the prompt away too; `/codepet show` brings it back. */
       isStripClosed: boolean
+      /** What the panel shows; see CodingPetPaneView. */
+      paneView: CodingPetPaneView | null
     }
   }
 }

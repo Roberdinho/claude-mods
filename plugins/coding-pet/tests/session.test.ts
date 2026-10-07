@@ -114,6 +114,13 @@ describe('the session', () => {
           requestId: 'coding-pet',
           props: { title: 'Byte', isFocused: true, bodyColumns: 60 } as never,
         } as never)
+        if (surface === 'desktop') {
+          // The panel draws from its view alone; a visible change still reaches it.
+          await $.command.run({ command: 'codepet', args: 'name Bytey' } as never)
+          expect(await pane.find({ type: 'Text', text: 'Bytey' })).toBeDefined()
+          await $.command.run({ command: 'codepet', args: 'name Byte' } as never)
+          expect(await pane.find({ type: 'Text', text: 'Byte' })).toBeDefined()
+        }
         expect(await pane.find({ type: 'Text', text: /Achievements \d+\/9/ })).toBeDefined()
         expect(await pane.find({ key: 'food:taco' })).toBeDefined()
         expect(await pane.find({ key: 'close' })).toBeDefined()

@@ -1,4 +1,4 @@
-import type { CodingPetMood, CodingPetRegistry, CodingPetSpecies, CodingPetStage, CodingPetState } from '../types'
+import type { CodingPetMood, CodingPetPaneView, CodingPetRegistry, CodingPetSpecies, CodingPetStage, CodingPetState } from '../types'
 import { fedStreak, stageOf, xpToNext } from './core'
 import { EGG } from './registry'
 
@@ -66,7 +66,7 @@ function artOf(species: CodingPetSpecies, stage: CodingPetStage): [string[], str
  * The pet's rows for this frame, all one width. It blinks now and then, and
  * bobs between its two frames: fast while coding, not at all asleep.
  */
-export function spriteRows(pet: CodingPetState, species: CodingPetSpecies, mood: CodingPetMood, frame: number): string[] {
+export function spriteRows(pet: Pick<CodingPetState, 'level'>, species: CodingPetSpecies, mood: CodingPetMood, frame: number): string[] {
   const stage = stageOf(pet.level)
   const frames = artOf(species, stage)
   const isBlink = mood !== 'sleeping' && frame % 13 === 12
@@ -142,3 +142,42 @@ export function labelOf(registry: CodingPetRegistry, kind: string): string {
 
 export const HELP =
   'Try /codepet (the pane), /codepet feed [apple|pizza|coffee|cookie], /codepet play, /codepet rest, /codepet stats, /codepet name <name>, /codepet species <blob|cat|crab>, /codepet close (the panel and strip), /codepet show, /codepet hide (silent too), /codepet reset.'
+
+/** What the panel shows for a pet in a mood: numbers rounded as drawn, lists as listed. */
+export function paneViewOf(pet: CodingPetState, registry: CodingPetRegistry, mood: CodingPetMood): CodingPetPaneView {
+  return {
+    name: pet.name,
+    species: speciesOf(registry, pet.species).id,
+    stage: stageOf(pet.level),
+    mood,
+    level: pet.level,
+    xp: Math.floor(pet.xp),
+    xpToNext: xpToNext(pet.level),
+    totalXp: Math.floor(pet.totalXp),
+    stats: {
+      happiness: Math.round(pet.stats.happiness),
+      energy: Math.round(pet.stats.energy),
+      fullness: Math.round(pet.stats.fullness),
+    },
+    today: Object.entries(pet.today.xp)
+      .filter(([, xp]) => xp > 0)
+      .map(([kind, xp]) => ({ label: labelOf(registry, kind), xp })),
+    totals: Object.entries(pet.totals)
+      .filter(([kind]) => kind !== 'toolFail')
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 8)
+      .map(([kind, count]) => ({ label: labelOf(registry, kind), count })),
+    achievements: registry.achievements.map(one => ({
+      id: one.id,
+      title: one.title,
+      emoji: one.emoji,
+      description: one.description,
+      isEarned: pet.achievements.includes(one.id),
+    })),
+    foods: registry.foods.map(food => ({ id: food.id, emoji: food.emoji })),
+  }
+}
+
+/** Whether two panel views draw the same. */
+export const isSameView = (a: CodingPetPaneView | null, b: CodingPetPaneView | null): boolean =>
+  JSON.stringify(a) === JSON.stringify(b)

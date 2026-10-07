@@ -14,7 +14,7 @@ import { SCENE, petScene } from './art'
 import type { Signal } from './activity'
 import { decay, migrate, moodOf, needsOf, newPet, reduce, stageOf, viewOf, xpToNext } from './core'
 import type { Difficulty, Settings } from './core'
-import { HELP, MOOD_LABEL, bar, bubbleOf, describe, iconOf, labelOf, speciesOf, spriteRows, statColor, statusLine } from './draw'
+import { HELP, MOOD_LABEL, bar, bubbleOf, describe, iconOf, isSameView, paneViewOf, speciesOf, spriteRows, statColor, statusLine } from './draw'
 import { BUILT_IN, addTo, emptyRegistry, mergeRegistry } from './registry'
 
 const PLUGIN = 'coding-pet'
@@ -31,6 +31,7 @@ const hiddenAtom = atom({ plugin: 'coding-pet', key: 'isHidden' } as const, fals
 const busyAtom = atom({ plugin: 'coding-pet', key: 'isBusy' } as const, false)
 const paneOpenAtom = atom({ plugin: 'coding-pet', key: 'isPaneOpen' } as const, false)
 const stripClosedAtom = atom({ plugin: 'coding-pet', key: 'isStripClosed' } as const, false)
+const paneViewAtom = atom({ plugin: 'coding-pet', key: 'paneView' } as const, null)
 
 /** What this load of the module holds; a reload starts it over. */
 const live = {
@@ -107,6 +108,16 @@ async function announce($: EngineInterface, pet: CodingPetState, effects: readon
   await showStatus($, pet, moodOf(pet, now, await read($, busyAtom)), registry)
 }
 
+/**
+ * Brings the panel's view up to date, writing it only when what it shows
+ * changed: a write redraws the panel, and a redraw reloads its picture.
+ */
+async function refreshPane($: EngineInterface): Promise<void> {
+  const pet = await read($, petAtom)
+  const view = pet === null ? null : paneViewOf(pet, await registryOf($), moodOf(pet, await $.clock.now(), await read($, busyAtom)))
+  if (!isSameView(await read($, paneViewAtom), view)) await update($, paneViewAtom, () => view)
+}
+
 /** Applies an action to the pet, keeps it, and says what it caused. */
 async function dispatch($: EngineInterface, action: CodingPetAction): Promise<CodingPetEffect[]> {
   const now = await $.clock.now()
@@ -123,6 +134,7 @@ async function dispatch($: EngineInterface, action: CodingPetAction): Promise<Co
   const pet = after as CodingPetState | null
   if (pet === null) return []
   await $.store.set('pet', pet)
+  await refreshPane($)
   await announce($, pet, effects, now)
 
   return effects
@@ -247,6 +259,7 @@ async function run($: EngineInterface, args: string): Promise<string> {
       const egg = await freshPet($)
       await update($, petAtom, () => egg)
       await $.store.set('pet', egg)
+      await refreshPane($)
       return `Goodbye, ${pet.name}. A new egg appears… meet ${egg.name}.`
     }
     case 'help':
@@ -312,6 +325,7 @@ export const register: Register = (on, options) => {
     pet = reduce(pet, { kind: 'tick' }, now, registry, live.settings).pet
     await update($, petAtom, () => pet)
     await $.store.set('pet', pet)
+    await refreshPane($)
     // A load starts with the panel closed, even one left open before a reload.
     await closePane($)
     const isStripClosed = (await $.store.get('isStripClosed')) === true
@@ -336,10 +350,26 @@ export const register: Register = (on, options) => {
     value: await dispatch($, { kind: 'activity', activity: e.kind, xp: e.xp ?? 5, ...(e.reason === undefined ? {} : { reason: e.reason }) }),
   }))
   on('codingPet.act', async ($, e) => ({ value: await dispatch($, e) }))
-  on('codingPet.addSpecies', async ($, e) => ({ value: void (await update($, extensionsAtom, ext => addTo(ext, 'species', e))) }))
-  on('codingPet.addFood', async ($, e) => ({ value: void (await update($, extensionsAtom, ext => addTo(ext, 'foods', e))) }))
-  on('codingPet.addActivity', async ($, e) => ({ value: void (await update($, extensionsAtom, ext => addTo(ext, 'activities', e))) }))
-  on('codingPet.addAchievement', async ($, e) => ({ value: void (await update($, extensionsAtom, ext => addTo(ext, 'achievements', e))) }))
+  on('codingPet.addSpecies', async ($, e) => {
+    await update($, extensionsAtom, ext => addTo(ext, 'species', e))
+    await refreshPane($)
+    return { value: undefined }
+  })
+  on('codingPet.addFood', async ($, e) => {
+    await update($, extensionsAtom, ext => addTo(ext, 'foods', e))
+    await refreshPane($)
+    return { value: undefined }
+  })
+  on('codingPet.addActivity', async ($, e) => {
+    await update($, extensionsAtom, ext => addTo(ext, 'activities', e))
+    await refreshPane($)
+    return { value: undefined }
+  })
+  on('codingPet.addAchievement', async ($, e) => {
+    await update($, extensionsAtom, ext => addTo(ext, 'achievements', e))
+    await refreshPane($)
+    return { value: undefined }
+  })
 
   on('ui.close', async ($, e, next) => {
     const closed = await next(e)
@@ -352,6 +382,7 @@ export const register: Register = (on, options) => {
   on('prompt.submit', async ($, e, next) => {
     await update($, busyAtom, () => true)
     await signal($, { on: 'prompt' }).catch(() => undefined)
+    await refreshPane($)
     return next(e)
   })
 
@@ -359,6 +390,7 @@ export const register: Register = (on, options) => {
     const done = await next(e)
     await update($, busyAtom, () => false)
     await signal($, { on: 'turn' }).catch(() => undefined)
+    await refreshPane($)
     return done
   })
 
@@ -464,29 +496,26 @@ export const register: Register = (on, options) => {
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
     const ui = $.ui.resolve(e)
     const { Box, Button, Text } = ui
-    const pet = await read($, petAtom)
-    if (pet === null) return <Text dimColor>Your pet has not hatched yet.</Text>
+    // The view alone: the pet itself changes on every tool call, the view only
+    // when what it shows does (see refreshPane).
+    const view = await read($, paneViewAtom)
+    if (view === null) return <Text dimColor>Your pet has not hatched yet.</Text>
     // A surface that draws SVG gets the animated picture, which moves by itself;
     // only the terminal's text sprite follows the frame counter.
     const isPicture = e.surface !== 'terminal' && 'Svg' in ui
     const frame = isPicture ? 0 : await read($, frameAtom)
-    const registry = await registryOf($)
-    const now = await $.clock.now()
-    const mood = moodOf(pet, now, await read($, busyAtom))
-    const species = speciesOf(registry, pet.species)
+    const species = speciesOf(await registryOf($), view.species)
+    const { mood } = view
     const width = Math.max(30, e.props.bodyColumns)
     // Beside the picture (about 28 cells) or the sprite there is less room.
     const long = Math.max(8, Math.min(24, width - (isPicture ? 50 : 36)))
-    const s = pet.stats
-    const today = Object.entries(pet.today.xp).filter(([, xp]) => xp > 0)
-    const totals = Object.entries(pet.totals)
-      .filter(([kind]) => kind !== 'toolFail')
-      .sort(([, a], [, b]) => b - a)
+    const s = view.stats
+    const earned = view.achievements.filter(one => one.isEarned).length
     const stat = (label: string, value: number) => (
       <Text wrap="truncate">
         <Text>{label.padEnd(10)}</Text>
         <Text color={statColor(value)}>{bar(value, 100, long)}</Text>
-        <Text dimColor> {Math.round(value)}</Text>
+        <Text dimColor> {value}</Text>
       </Text>
     )
 
@@ -498,30 +527,30 @@ export const register: Register = (on, options) => {
             // species, so XP and stats never reload it; they are text beside it.
             <ui.Svg
               key="pet-scene"
-              source={petScene(species, stageOf(pet.level), mood)}
-              alt={`${pet.name} the ${species.id}, ${MOOD_LABEL[mood]}`}
+              source={petScene(species, view.stage, mood)}
+              alt={`${view.name} the ${species.id}, ${MOOD_LABEL[mood]}`}
               width={SCENE.width}
               height={SCENE.height}
               isInteractive
             />
           ) : (
             <Box flexDirection="column">
-              {spriteRows(pet, species, mood, frame).map(row => (
+              {spriteRows(view, species, mood, frame).map(row => (
                 <Text color={species.color}>{row}</Text>
               ))}
             </Box>
           )}
           <Box flexDirection="column" marginLeft={2} flexGrow={1}>
-            <Text bold>{pet.name}</Text>
+            <Text bold>{view.name}</Text>
             <Text dimColor>
-              {species.id} · {stageOf(pet.level)} · {MOOD_LABEL[mood]}
+              {species.id} · {view.stage} · {MOOD_LABEL[mood]}
             </Text>
             {!isPicture && <Text color="#F28CB1">{bubbleOf(mood, frame) || ' '}</Text>}
             <Text> </Text>
             <Text wrap="truncate">
-              <Text>{`Level ${pet.level}`.padEnd(10)}</Text>
-              <Text color="#9B87F5">{bar(pet.xp, xpToNext(pet.level), long)}</Text>
-              <Text dimColor> {Math.floor(pet.xp)}/{xpToNext(pet.level)}</Text>
+              <Text>{`Level ${view.level}`.padEnd(10)}</Text>
+              <Text color="#9B87F5">{bar(view.xp, view.xpToNext, long)}</Text>
+              <Text dimColor> {view.xp}/{view.xpToNext}</Text>
             </Text>
             {stat('Happiness', s.happiness)}
             {stat('Energy', s.energy)}
@@ -530,28 +559,28 @@ export const register: Register = (on, options) => {
         </Box>
         <Text> </Text>
         <Text bold>Today</Text>
-        {today.length === 0 && <Text dimColor>No XP yet today.</Text>}
-        {today.map(([kind, xp]) => (
+        {view.today.length === 0 && <Text dimColor>No XP yet today.</Text>}
+        {view.today.map(one => (
           <Text wrap="truncate">
-            {labelOf(registry, kind).padEnd(16)}
-            <Text color="#6CC24A">+{xp} XP</Text>
+            {one.label.padEnd(16)}
+            <Text color="#6CC24A">+{one.xp} XP</Text>
           </Text>
         ))}
         <Text> </Text>
-        <Text bold>Lifetime · {Math.floor(pet.totalXp)} XP</Text>
-        {totals.length === 0 && <Text dimColor>Nothing yet.</Text>}
-        {totals.slice(0, 8).map(([kind, n]) => (
+        <Text bold>Lifetime · {view.totalXp} XP</Text>
+        {view.totals.length === 0 && <Text dimColor>Nothing yet.</Text>}
+        {view.totals.map(one => (
           <Text wrap="truncate" dimColor>
-            {labelOf(registry, kind).padEnd(16)}
-            {n}
+            {one.label.padEnd(16)}
+            {one.count}
           </Text>
         ))}
         <Text> </Text>
         <Text bold>
-          Achievements {pet.achievements.length}/{registry.achievements.length}
+          Achievements {earned}/{view.achievements.length}
         </Text>
-        {registry.achievements.map(one =>
-          pet.achievements.includes(one.id) ? (
+        {view.achievements.map(one =>
+          one.isEarned ? (
             <Text wrap="truncate">
               {one.emoji} {one.title}
               <Text dimColor> · {one.description}</Text>
@@ -564,7 +593,7 @@ export const register: Register = (on, options) => {
         )}
         <Text> </Text>
         <Box flexDirection="row" flexWrap="wrap">
-          {registry.foods.map((food, i) => (
+          {view.foods.map((food, i) => (
             <Button
               key={`food:${food.id}`}
               label={`${food.emoji} ${food.id}`}

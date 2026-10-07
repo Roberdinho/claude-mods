@@ -4,7 +4,7 @@ import { classify } from '../hooks/activity'
 import { petScene } from '../hooks/art'
 import { decay, fedStreak, migrate, moodOf, newPet, reduce, stageOf, xpToNext } from '../hooks/core'
 import type { Settings } from '../hooks/core'
-import { bar, spriteRows, speciesOf } from '../hooks/draw'
+import { bar, isSameView, paneViewOf, spriteRows, speciesOf } from '../hooks/draw'
 import { BUILT_IN, addTo, emptyRegistry, mergeRegistry } from '../hooks/registry'
 import type { CodingPetAction, CodingPetState } from '../types'
 
@@ -248,5 +248,21 @@ describe('drawing', () => {
     const after = act(before, { kind: 'activity', activity: 'commit' }, T0 + 5_000).pet
     expect(petScene(species, stageOf(after.level), 'ok')).toBe(petScene(species, stageOf(before.level), 'ok'))
     expect(after.totalXp).toBeGreaterThan(before.totalXp)
+  })
+
+  test('the panel view changes only with what it shows', () => {
+    const start = pet()
+    const view = paneViewOf(start, BUILT_IN, 'ok')
+    // Stats drifting by less than a point, and time passing, draw the same.
+    const drifted = { ...start, stats: { happiness: 70.3, energy: 79.8, fullness: 70.4 }, lastUpdated: T0 + 60_000 }
+    expect(isSameView(paneViewOf(drifted, BUILT_IN, 'ok'), view)).toBe(true)
+    // A read in its cooldown counts, and the lifetime count shows it: that is visible.
+    const read = act(start, { kind: 'activity', activity: 'read' }).pet
+    expect(isSameView(paneViewOf(read, BUILT_IN, 'ok'), view)).toBe(false)
+    // So do a whole point of a stat, a mood, and XP.
+    expect(isSameView(paneViewOf({ ...start, stats: { ...start.stats, energy: 79 } }, BUILT_IN, 'ok'), view)).toBe(false)
+    expect(isSameView(paneViewOf(start, BUILT_IN, 'coding'), view)).toBe(false)
+    expect(isSameView(paneViewOf({ ...start, xp: 3 }, BUILT_IN, 'ok'), view)).toBe(false)
+    expect(view.stats).toEqual({ happiness: 70, energy: 80, fullness: 70 })
   })
 })
