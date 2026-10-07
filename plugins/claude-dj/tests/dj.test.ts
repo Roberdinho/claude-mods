@@ -117,6 +117,7 @@ describe('words', () => {
 describe('the session', () => {
   test('a fake watcher drives the band, /next, /vol and the tools', async ($, on) => {
     mock.env(on, { OS: 'Windows_NT', TEMP: 'C:\\Temp' })
+    mock.store(on)
     // The watcher: says what plays, then answers `next` with the next song,
     // `volume <n>` with that volume and `mute` by muting.
     const files: Record<string, string> = {}
@@ -139,6 +140,10 @@ describe('the session', () => {
     on('session.start', (_$, e) => ({ cwd: e.cwd }))
     on('command.register', (_$, e) => ({ value: { command: e.name } }))
     on('tool.register', (_$, e) => ({ value: { tool: `mcp__claude-dj__${e.name}` } }))
+    // The engine beneath: its own (empty) band, status line and toasts.
+    on('ui.render', { component: 'AbovePrompt' }, () => ({ type: 'Box', props: {}, children: [] }))
+    on('ui.status', () => ({ value: undefined }))
+    on('ui.toast', () => ({ value: undefined }))
     mock.clock(on, { now: 1_760_000_000_000 })
     on('process.spawn', async function* () {
       for (;;) {
@@ -172,6 +177,26 @@ describe('the session', () => {
       expect(await ui.find({ key: 'toggle' })).toBeDefined()
       expect(await ui.find({ type: 'Text', text: '40%' })).toBeDefined()
       expect(await ui.find({ key: 'volup' })).toBeDefined()
+      await ui.unmount()
+    }
+
+    // ✕ hides the band; /dj show brings it back, /dj hide hides it again.
+    for (const surface of ['terminal', 'desktop'] as const) {
+      const ui = await $.ui.mount({
+        plugin: 'claude-dj',
+        surface,
+        component: 'AbovePrompt',
+        props: { hasSurvey: false, isWorking: false, maxRows: 4, bodyColumns: 100 } as never,
+      })
+      await ui.press({ key: 'hide' })
+      expect(await ui.find({ type: 'Text', text: /Midnight City/ })).toBeUndefined()
+      const shownAgain = await $.command.run({ command: 'dj', args: 'show' } as never)
+      expect(String(shownAgain.text)).toBe('Band shown.')
+      expect(await ui.find({ type: 'Text', text: /Midnight City/ })).toBeDefined()
+      const hidden = await $.command.run({ command: 'dj', args: 'Hide' } as never)
+      expect(String(hidden.text)).toBe('Band hidden. /dj show brings it back.')
+      expect(await ui.find({ type: 'Text', text: /Midnight City/ })).toBeUndefined()
+      await $.command.run({ command: 'dj', args: 'show' } as never)
       await ui.unmount()
     }
 

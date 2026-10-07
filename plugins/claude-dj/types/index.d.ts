@@ -24,10 +24,20 @@ export type Player =
   | { kind: 'ready'; track: Track | null; volume: Volume | null }
   | { kind: 'unavailable'; reason: string }
 
+/** The Spotify account the Web API features run as; null when not signed in. */
+export type SpotifyStatus = {
+  name: string
+  /** `premium`, `free`, ...: playback control needs premium. */
+  product: string
+}
+
 declare module 'claude-code' {
   interface PluginState {
     'claude-dj': {
       player: Player
+      spotify: SpotifyStatus | null
+      /** The band hidden with ✕ or /dj hide; kept in `$.store` across sessions. */
+      isHidden: boolean
     }
   }
 }

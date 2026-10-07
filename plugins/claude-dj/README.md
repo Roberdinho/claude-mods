@@ -4,13 +4,14 @@ Control your music from Claude Code: YouTube Music, Spotify, a browser tab, anyt
 that shows up in the Windows media flyout.
 
 ```
-♪ Midnight City — M83 · Chrome  ⏮  ⏸  ⏭  🔊 − 40% +
+♪ Midnight City — M83 · Chrome  ⏮  ⏸  ⏭  🔊 − 40% +  ✕
 ```
 
 ## Use
 
 - **Now-playing band** above the prompt, with previous / play-pause / next buttons and
-  mute / volume down / volume up.
+  mute / volume down / volume up. **✕** hides it (a `♪ Title — Artist` status line entry
+  takes its place); `/dj show` brings it back. It stays hidden across sessions until you do.
 - **Commands** (they also work while Claude is busy):
 
 | Command | Does |
@@ -21,10 +22,47 @@ that shows up in the Windows media flyout.
 | `/vol` | show the volume |
 | `/vol 40`, `/vol +5`, `/vol -5`, `/vol up`, `/vol down` | set or change the volume |
 | `/vol mute`, `/vol unmute` (or `/dj mute`, `/dj vol 40`) | mute and unmute |
+| `/dj hide`, `/dj show` | hide or show the band |
 
 - **Music tools for Claude**: ask *"what's playing?"*, *"skip this one"*, *"turn it down
   a bit"* or *"pause the music while you run the tests"*. Claude gets `now_playing`,
   `music_control` and `music_volume` tools.
+
+## Spotify
+
+Play, pause, skip and volume already work for the Spotify app without setup. Sign in to
+Spotify for more:
+
+| Command | Does |
+| --- | --- |
+| `/spotify <song>` or `/play <song>` | find a song and play it |
+| `/spotify album …`, `/spotify artist …`, `/spotify playlist …` | play a whole album, artist or playlist |
+| `/spotify <spotify: URI or open.spotify.com link>` | play exactly that |
+| `/spotify queue <song>` | add a song to the queue |
+| `/spotify like` (or ♥ on the band) | save the playing song to Liked Songs |
+| `/spotify devices`, `/spotify device <name>` | list devices, move playback to one |
+| `/spotify`, `/spotify login`, `/spotify logout` | status, sign in, sign out |
+
+Claude also gets `spotify_search`, `spotify_play`, `spotify_queue` and `spotify_like`, so
+*"put on some lofi for focus"* or *"queue something like this"* work.
+
+When Spotify isn't open anywhere, the mod starts the Spotify app on this PC and plays there.
+
+### Setup (once)
+
+Spotify only gives API access to apps you register yourself, and the account has to be
+**Premium** (Spotify's rule since February 2026; free accounts can search but not play
+or queue).
+
+1. Go to [developer.spotify.com/dashboard](https://developer.spotify.com/dashboard), create an
+   app, and pick **Web API**.
+2. Add the Redirect URI `http://127.0.0.1:43117/callback` exactly.
+3. Copy the app's **Client ID** into claude-dj's `spotifyClientId` setting.
+4. Run `/spotify login` and approve in the browser tab that opens.
+
+The sign-in uses PKCE, so there's no client secret. Tokens are kept in the mod's own store
+on this machine and refreshed automatically. `/spotify logout` forgets them; remove the app at
+[spotify.com/account/apps](https://www.spotify.com/account/apps/) to revoke access fully.
 
 ## How it works
 
@@ -49,12 +87,14 @@ In the config menu (or `pluginConfigs["claude-dj"].options` in `settings.json`):
 | --- | --- |
 | `showBand` | `true`; off shows a `♪ Title — Artist` status line entry instead |
 | `volumeStep` | `10`; how far the band's − / + and `/vol up` / `down` move the volume |
+| `spotifyClientId` | *(empty)*; your Spotify app's Client ID, which turns on `/spotify` and the Spotify tools |
 | `musicTools` | `true`; off hides the music tools from Claude |
 
 ## Requirements
 
 - Claude Code with function-hook plugins (mods).
 - Windows 10 or 11. macOS and Linux are planned.
+- For the Spotify features: a Spotify Premium account and your own Spotify app (see Setup).
 
 ## Roadmap
 
@@ -62,4 +102,3 @@ In the config menu (or `pluginConfigs["claude-dj"].options` in `settings.json`):
 - macOS (`nowplaying-cli`) and Linux (`playerctl`)
 - YouTube Music desktop bridge (th-ch/youtube-music API server, ytmdesktop Companion):
   search, queue, like
-- Spotify Web API: search, queue, devices

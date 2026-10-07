@@ -1,7 +1,7 @@
 {
   "name": "claude-dj",
-  "version": "0.2.0",
-  "description": "Control YouTube Music, Spotify or anything else playing from Claude Code: a now-playing band, /play /pause /next /prev /vol, and music tools for Claude",
+  "version": "0.3.0",
+  "description": "Control YouTube Music, Spotify or anything else playing from Claude Code: a now-playing band, /play /pause /next /prev /vol, Spotify search, play, queue and like, and music tools for Claude",
   "author": { "name": "R. Woeltjes" },
   "license": "MIT",
   "keywords": ["music", "youtube music", "spotify", "media", "now playing", "dj"],
@@ -18,6 +18,12 @@
       "title": "Volume step",
       "description": "How many percent the band's + and - buttons and /vol up and down move the volume",
       "default": 10
+    },
+    "spotifyClientId": {
+      "type": "string",
+      "title": "Spotify Client ID",
+      "description": "Client ID of your app at developer.spotify.com (Redirect URI http://127.0.0.1:43117/callback); enables /spotify and the Spotify tools",
+      "default": ""
     },
     "musicTools": {
       "type": "boolean",

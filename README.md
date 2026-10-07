@@ -13,4 +13,4 @@ Then run `/reload-plugins` (or start a new session) and type `/polaroid` or `/dj
 | Mod | What it does |
 | --- | --- |
 | [prompt-polaroid](plugins/prompt-polaroid) | CodeSnap-style Polaroid snapshots of your prompts |
-| [claude-dj](plugins/claude-dj) | Control YouTube Music, Spotify and other media: now-playing band, `/play` `/next` `/vol`, music tools for Claude |
+| [claude-dj](plugins/claude-dj) | Control YouTube Music, Spotify and other media: now-playing band, `/play` `/next` `/vol`, `/spotify`, music tools for Claude |
