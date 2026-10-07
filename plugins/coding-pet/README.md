@@ -18,7 +18,9 @@ while you and Claude code, levels up and grows, and needs feeding, play and rest
 - **`/codepet`** (or the band's **panel** button, `o`) opens its side panel: level
   progress, stats, today's XP per source, lifetime totals, achievements, and a button per
   food. In the desktop app the pet there is an animated picture that bounces, blinks and
-  dozes; in a terminal it is the text sprite.
+  dozes; in a terminal it is the text sprite. The desktop app opens the panel when a
+  session starts (without taking the keyboard), unless `/codepet close` or
+  `/codepet hide` put it away; a terminal starts with the strip above the prompt.
 
 | Command | Does |
 | --- | --- |

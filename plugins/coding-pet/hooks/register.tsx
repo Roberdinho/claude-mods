@@ -177,10 +177,10 @@ async function setHidden($: EngineInterface, isHidden: boolean): Promise<void> {
   if (pet !== null) await showStatus($, pet, moodOf(pet, await $.clock.now(), await read($, busyAtom)), await registryOf($))
 }
 
-async function openPane($: EngineInterface): Promise<void> {
+async function openPane($: EngineInterface, focus = true): Promise<void> {
   const pet = await read($, petAtom)
   const rows = live.windowRows > 0 ? Math.max(10, Math.floor(live.windowRows / 2)) : 16
-  await $.ui.open({ id: PANE, title: pet === null ? 'Coding pet' : `${pet.name} the coding pet`, focus: true, closeOnEscape: true, rows })
+  await $.ui.open({ id: PANE, title: pet === null ? 'Coding pet' : `${pet.name} the coding pet`, ...(focus ? { focus: true } : {}), closeOnEscape: true, rows })
   // The panel stands in for the strip above the prompt while it is open.
   await update($, paneOpenAtom, () => true)
 }
@@ -326,12 +326,15 @@ export const register: Register = (on, options) => {
     await update($, petAtom, () => pet)
     await $.store.set('pet', pet)
     await refreshPane($)
-    // A load starts with the panel closed, even one left open before a reload.
+    // A load starts with the panel closed, even one left open before a reload...
     await closePane($)
     const isStripClosed = (await $.store.get('isStripClosed')) === true
     await update($, stripClosedAtom, () => isStripClosed)
     const isHidden = (await $.store.get('isHidden')) === true
     await update($, hiddenAtom, () => isHidden)
+    // ...except in the desktop app, where the pet lives in the panel unless put away.
+    const isDesktop = (await $.env.get('CLAUDE_CODE_ENTRYPOINT')) === 'claude-desktop'
+    if (isDesktop && !isHidden && !isStripClosed) await openPane($, false)
     await announce($, pet, [], now)
 
     animate($, !isHidden)

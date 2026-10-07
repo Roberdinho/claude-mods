@@ -196,4 +196,39 @@ describe('the session', () => {
       expect(toasts.length).toBe(quiet)
     },
   )
+
+  test('in the desktop app the panel opens at start, unless it was put away', { options: { petName: 'Byte' } }, async ($, on) => {
+    mock.clock(on, { now: T0 })
+    mock.store(on)
+    let entrypoint = 'claude-desktop'
+    on('env.get', (_$, e) => ({ value: e.name === 'CLAUDE_CODE_ENTRYPOINT' ? entrypoint : undefined }) as never)
+    const opened: { id: string; focus?: boolean }[] = []
+    on('ui.open', (_$, e) => {
+      opened.push(e)
+      return { value: undefined } as never
+    })
+    on('ui.close', () => ({ value: undefined }))
+    on('ui.toast', () => ({ value: undefined }))
+    on('ui.status', () => ({ value: undefined }))
+    on('session.start', (_$, e) => ({ cwd: e.cwd }))
+    on('command.register', (_$, e) => ({ value: { command: e.name } }))
+
+    await $.session.start({ cwd: 'C:/work' } as never)
+    expect(opened).toEqual([expect.objectContaining({ id: 'coding-pet' })])
+    expect(opened[0]?.focus).toBeUndefined()
+
+    // Put away with /codepet close, the next start leaves it closed.
+    await $.command.run({ command: 'codepet', args: 'close' } as never)
+    await $.session.start({ cwd: 'C:/work' } as never)
+    expect(opened.length).toBe(1)
+
+    // In the terminal it stays closed too.
+    await $.command.run({ command: 'codepet', args: 'show' } as never)
+    entrypoint = 'cli'
+    await $.session.start({ cwd: 'C:/work' } as never)
+    expect(opened.length).toBe(1)
+    entrypoint = 'claude-desktop'
+    await $.session.start({ cwd: 'C:/work' } as never)
+    expect(opened.length).toBe(2)
+  })
 })
