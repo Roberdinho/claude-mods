@@ -5,14 +5,14 @@ A side panel listing every installed mod that adds commands. Pick a mod to see i
 - **No arguments** → it runs right away.
 - **Takes arguments** (or it is unknown whether it does) → `/<command> ` is put in the prompt bar and the panel closes, so you can type the rest and press Enter.
 
-The panel opens by itself when a session starts (on a wide enough terminal). Open it any time with:
+The panel only opens when you ask for it:
 
 ```
 /mods            # the list of mods
 /mods claude-dj  # straight to one mod's commands
 ```
 
-Keys: `1`–`9` pick a row, `b` goes back to the mod list, Esc closes the panel (when opened via `/mods`).
+Keys: `1`–`9` pick a row, `b` goes back to the mod list, Esc closes the panel.
 
 ## How it decides
 

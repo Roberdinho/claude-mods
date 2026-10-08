@@ -1,6 +1,6 @@
 {
   "name": "mods-panel",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A side panel listing your installed mods and their commands: pick one to run it, or to fill the prompt when it takes arguments: /mods",
   "author": { "name": "R. Woeltjes" },
   "license": "MIT",

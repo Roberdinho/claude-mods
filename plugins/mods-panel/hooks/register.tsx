@@ -19,7 +19,6 @@ export const register: Register = on => {
     // Have the engine list every command again, so the describe hook below
     // learns which ones take arguments.
     $.ui.invalidate('command.describe')
-    void $.ui.open({ id: PANE, title: 'Mods' })
 
     return next(e)
   })
