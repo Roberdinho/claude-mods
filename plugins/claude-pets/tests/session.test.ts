@@ -3,11 +3,10 @@ import { describe, expect, mock, test } from 'claude-code/testing'
 const T0 = Date.UTC(2026, 9, 7, 12, 0, 0)
 
 describe('the session', () => {
-  test('in the desktop app the panel opens at start, and /pet opens it anywhere', async ($, on) => {
+  test('the panel never opens by itself; /pet and /pet show open it', async ($, on) => {
     mock.clock(on, { now: T0 })
     mock.store(on)
-    let entrypoint = 'claude-desktop'
-    on('env.get', (_$, e) => ({ value: e.name === 'CLAUDE_CODE_ENTRYPOINT' ? entrypoint : undefined }) as never)
+    on('env.get', (_$, e) => ({ value: e.name === 'CLAUDE_CODE_ENTRYPOINT' ? 'claude-desktop' : undefined }) as never)
     const opened: { id: string; focus?: boolean }[] = []
     on('ui.open', (_$, e) => {
       opened.push(e)
@@ -18,9 +17,12 @@ describe('the session', () => {
     on('command.register', (_$, e) => ({ value: { command: e.name } }))
     on('ui.render', { component: 'AbovePrompt' }, () => ({ type: 'Box', props: {}, children: [] }))
 
+    // Even in the desktop app, a session starts with the panel closed.
     await $.session.start({ cwd: 'C:/work' } as never)
-    expect(opened).toEqual([expect.objectContaining({ id: 'claude-pets' })])
-    expect(opened[0]?.focus).toBeUndefined()
+    expect(opened).toEqual([])
+
+    await $.command.run({ command: 'pet', args: '' } as never)
+    expect(opened).toEqual([expect.objectContaining({ id: 'claude-pets', focus: true })])
 
     // The panel draws the pets and a ball button; the strip steps aside meanwhile.
     const pane = await $.ui.mount({
@@ -42,19 +44,10 @@ describe('the session', () => {
     await pane.press({ key: 'close' })
     await pane.unmount()
 
-    // Hidden, the next start leaves it closed.
-    await $.command.run({ command: 'pet', args: 'hide' } as never)
+    // The next start leaves it closed again; /pet show opens it.
     await $.session.start({ cwd: 'C:/work' } as never)
     expect(opened.length).toBe(1)
-
-    // A terminal starts with the strip; a bare /pet opens the panel there too.
     await $.command.run({ command: 'pet', args: 'show' } as never)
     expect(opened.length).toBe(2)
-    entrypoint = 'cli'
-    await $.session.start({ cwd: 'C:/work' } as never)
-    expect(opened.length).toBe(2)
-    await $.command.run({ command: 'pet', args: '' } as never)
-    expect(opened.length).toBe(3)
-    expect(opened[2]?.focus).toBe(true)
   })
 })

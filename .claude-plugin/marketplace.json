@@ -23,7 +23,7 @@
       "name": "claude-pets",
       "source": "./plugins/claude-pets",
       "description": "VS Code Pets for Claude Code: pets above your prompt that wander, chase balls, cheer when a turn ends and nap when you're away: /pet",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "category": "fun",
       "keywords": ["pets", "vscode-pets", "cat", "dog", "clawd"]
     },

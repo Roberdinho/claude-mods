@@ -48,8 +48,8 @@ async function setHidden($: EngineInterface, isHidden: boolean): Promise<void> {
 }
 
 /** Opens the playground as a side panel: the desktop app draws no strip above the prompt. */
-async function openPane($: EngineInterface, focus = true): Promise<void> {
-  await $.ui.open({ id: PANE, title: 'Pets', ...(focus ? { focus: true } : {}), closeOnEscape: true, rows: 8 })
+async function openPane($: EngineInterface): Promise<void> {
+  await $.ui.open({ id: PANE, title: 'Pets', focus: true, closeOnEscape: true, rows: 8 })
   // The panel stands in for the strip above the prompt while it is open.
   await update($, paneOpenAtom, () => true)
 }
@@ -137,11 +137,9 @@ export const register: Register = (on, options) => {
     // A reload keeps the scene running; a new session starts a fresh one.
     await update($, sceneAtom, scene => (scene.tick > 0 ? scene : emptyScene(seed + 7)))
     $.clock.every(TICK_MS, () => void tick($).catch(() => undefined))
-    // A load starts with the panel closed, even one left open before a reload,
-    // except in the desktop app, where the pets live in the panel unless hidden.
+    // A load starts with the panel closed, even one left open before a reload;
+    // /pet or /pet show opens it.
     await closePane($)
-    const isDesktop = (await $.env.get('CLAUDE_CODE_ENTRYPOINT')) === 'claude-desktop'
-    if (isDesktop && !isHidden) await openPane($, false)
 
     return started
   })

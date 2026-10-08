@@ -51,6 +51,8 @@ declare module 'claude-code' {
       pets: Pet[]
       scene: Scene
       isHidden: boolean
+      /** The side panel is open; the strip above the prompt steps aside for it. */
+      isPaneOpen: boolean
     }
   }
 }

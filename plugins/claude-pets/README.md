@@ -23,8 +23,8 @@ You start with **Clawd**. Add more with `/pet`:
 | `/pet` | open the pets in a side panel (Esc or its **close** button closes it) |
 | `/pet hide`, `/pet show` | put the band and panel away, and bring them back |
 
-In the desktop app, which draws nothing above the prompt, a session starts with the pets in
-their side panel (without taking the keyboard) unless `/pet hide` put them away.
+The desktop app draws nothing above the prompt; open the pets there with `/pet`. The panel
+never opens by itself.
 
 Pets: `clawd`, `cat`, `dog`, `crab` (Ferris), `fox`, `duck` (a rubber duck, naturally),
 `rabbit`, `snake`. Up to 8 at once. Your pets are remembered across sessions.

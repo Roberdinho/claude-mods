@@ -1,6 +1,6 @@
 {
   "name": "claude-pets",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "VS Code Pets for Claude Code: a cat, dog, crab, fox, rubber duck or Clawd that lives above your prompt, chases balls, cheers when a turn ends and naps when you're away",
   "author": { "name": "R. Woeltjes" },
   "license": "MIT",
