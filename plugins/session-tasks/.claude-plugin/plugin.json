@@ -1,4 +1,4 @@
-﻿﻿﻿{
+{
   "name": "session-tasks",
   "version": "0.3.0",
   "description": "A line above the prompt counting the background tasks running in every session, and a side panel listing them (shells, subagents, monitors, workflows) read from their transcripts, even in sessions marked Completed: /alltasks",
