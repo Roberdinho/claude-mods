@@ -1,0 +1,9 @@
+{
+  "name": "omnirealm",
+  "version": "0.3.0",
+  "description": "OmniRealm, a god-simulator sandbox in a side panel: terraform a procedural world, seed races and beasts, watch kingdoms rise and war, then intervene with storms, plagues and bombs. Pixel art on the desktop, text in the terminal: /omnirealm",
+  "author": { "name": "R. Woeltjes" },
+  "license": "MIT",
+  "keywords": ["game", "god game", "sandbox", "simulation", "pixel art", "fun"],
+  "types": "./types/index.d.ts"
+}

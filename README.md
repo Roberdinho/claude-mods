@@ -9,9 +9,10 @@ claude plugin install claude-dj@rwoel-mods
 claude plugin install coding-pet@rwoel-mods
 claude plugin install mods-panel@rwoel-mods
 claude plugin install session-tasks@rwoel-mods
+claude plugin install omnirealm@rwoel-mods
 ```
 
-Then run `/reload-plugins` (or start a new session) and type `/polaroid`, `/dj`, `/codepet`, `/mods` or `/alltasks`.
+Then run `/reload-plugins` (or start a new session) and type `/polaroid`, `/dj`, `/codepet`, `/mods`, `/alltasks` or `/omnirealm`.
 
 | Mod | What it does |
 | --- | --- |
@@ -20,3 +21,4 @@ Then run `/reload-plugins` (or start a new session) and type `/polaroid`, `/dj`,
 | [coding-pet](plugins/coding-pet) | A Tamagotchi-style coding companion that earns XP from edits, tests and commits, levels up, and needs feeding, play and rest, `/codepet` |
 | [mods-panel](plugins/mods-panel) | A side panel listing your installed mods; pick one to see its commands, pick a command to run it (or fill the prompt when it takes arguments), or uninstall a mod, `/mods` |
 | [session-tasks](plugins/session-tasks) | A line above the prompt counting every running session's background tasks, with a Details button for a side panel listing them, read from their transcripts, even for sessions marked Completed, `/alltasks` |
+| [omnirealm](plugins/omnirealm) | A god-simulator sandbox in a side panel: terraform a procedural world, seed races and beasts, watch kingdoms rise, war and rebel, then intervene with storms, plagues and bombs; pixel art on the desktop, `/omnirealm` |

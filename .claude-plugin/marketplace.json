@@ -42,6 +42,14 @@
       "version": "0.3.1",
       "category": "productivity",
       "keywords": ["tasks", "background", "sessions", "panel", "monitor"]
+    },
+    {
+      "name": "omnirealm",
+      "source": "./plugins/omnirealm",
+      "description": "OmniRealm, a god-simulator sandbox in a side panel: terraform a procedural world, seed races and beasts, watch kingdoms rise and war, then intervene with storms, plagues and bombs. Pixel art on the desktop, text in the terminal: /omnirealm",
+      "version": "0.3.0",
+      "category": "fun",
+      "keywords": ["game", "god game", "sandbox", "simulation", "pixel art"]
     }
   ]
 }
