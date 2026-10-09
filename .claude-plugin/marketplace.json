@@ -39,7 +39,7 @@
       "name": "session-tasks",
       "source": "./plugins/session-tasks",
       "description": "A line above the prompt counting the background tasks running in every session, and a side panel listing them (shells, subagents, monitors, workflows) read from their transcripts, even in sessions marked Completed: /alltasks",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "category": "productivity",
       "keywords": ["tasks", "background", "sessions", "panel", "monitor"]
     }
