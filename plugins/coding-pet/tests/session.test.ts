@@ -41,7 +41,12 @@ describe('the session', () => {
         return { value: undefined }
       })
       on('ui.close', () => ({ value: undefined }))
-      on('ui.open', () => ({ value: undefined }) as never)
+      const opened: string[] = []
+      on('ui.open', (_$, e) => {
+        opened.push(e.id)
+        return { value: undefined } as never
+      })
+      on('env.get', () => ({ value: undefined }) as never)
       // The engine's own band beneath the pet's draws nothing.
       on('ui.render', ($, e) => {
         const { Box } = $.ui.resolve(e)
@@ -59,6 +64,17 @@ describe('the session', () => {
 
       await $.session.start({ cwd: 'C:/work' } as never)
       expect(await pet()).toMatchObject({ name: 'Byte', species: 'cat', level: 1, stage: 'egg', xp: 0 })
+      // A session starts with the pet put away: no panel, no strip, until /codepet calls it.
+      expect(opened).toEqual([])
+      const away = await $.ui.mount({
+        plugin: 'coding-pet',
+        surface: 'terminal',
+        component: 'AbovePrompt',
+        props: { hasSurvey: false, isWorking: false, maxRows: 6, bodyColumns: 100 } as never,
+      })
+      expect(await away.find({ key: 'feed' })).toBeUndefined()
+      await away.unmount()
+      await $.command.run({ command: 'codepet', args: 'show' } as never)
 
       await $.tool.call({ tool: 'Edit', file_path: 'a.ts', old_string: 'a', new_string: 'b' } as never)
       await clock.advance(3_000)
@@ -151,11 +167,11 @@ describe('the session', () => {
         return isShown
       }
 
-      // /codepet close puts away the panel and the strip; it still speaks up.
+      // /codepet close puts away the panel and the strip.
       const closed = await $.command.run({ command: 'codepet', args: 'close' } as never)
-      expect(String(closed.text)).toContain('panel and strip are closed')
+      expect(String(closed.text)).toContain('is put away')
       expect(await strip()).toBe(false)
-      // Opening and closing the panel by itself leaves the strip put away.
+      // The panel's close button puts it away too.
       await $.command.run({ command: 'codepet', args: '' } as never)
       const panel = await $.ui.mount({
         plugin: 'coding-pet',
@@ -169,7 +185,7 @@ describe('the session', () => {
       expect(await strip()).toBe(false)
       // /codepet show brings the strip back.
       const back = await $.command.run({ command: 'codepet', args: 'show' } as never)
-      expect(String(back.text)).toContain('back above the prompt')
+      expect(String(back.text)).toContain('Byte is back')
       expect(await strip()).toBe(true)
 
       // Hidden, it is silent: hours later it is hungry, and says nothing.
@@ -197,38 +213,46 @@ describe('the session', () => {
     },
   )
 
-  test('in the desktop app the panel opens at start, unless it was put away', { options: { petName: 'Byte' } }, async ($, on) => {
+  test('a session starts with the pet put away, in the desktop app too', { options: { petName: 'Byte' } }, async ($, on) => {
     mock.clock(on, { now: T0 })
     mock.store(on)
-    let entrypoint = 'claude-desktop'
-    on('env.get', (_$, e) => ({ value: e.name === 'CLAUDE_CODE_ENTRYPOINT' ? entrypoint : undefined }) as never)
-    const opened: { id: string; focus?: boolean }[] = []
+    on('env.get', (_$, e) => ({ value: e.name === 'CLAUDE_CODE_ENTRYPOINT' ? 'claude-desktop' : undefined }) as never)
+    const opened: string[] = []
+    const closed: string[] = []
     on('ui.open', (_$, e) => {
-      opened.push(e)
+      opened.push(e.id)
       return { value: undefined } as never
     })
-    on('ui.close', () => ({ value: undefined }))
-    on('ui.toast', () => ({ value: undefined }))
+    on('ui.close', (_$, e) => {
+      closed.push(e.id)
+      return { value: undefined }
+    })
+    const toasts: string[] = []
+    on('ui.toast', (_$, e) => {
+      toasts.push(e.text)
+      return { value: undefined }
+    })
     on('ui.status', () => ({ value: undefined }))
     on('session.start', (_$, e) => ({ cwd: e.cwd }))
     on('command.register', (_$, e) => ({ value: { command: e.name } }))
 
     await $.session.start({ cwd: 'C:/work' } as never)
-    expect(opened).toEqual([expect.objectContaining({ id: 'coding-pet' })])
-    expect(opened[0]?.focus).toBeUndefined()
+    expect(opened).toEqual([])
 
-    // Put away with /codepet close, the next start leaves it closed.
+    // /codepet opens it; /codepet close closes it, and the next start leaves it closed.
+    await $.command.run({ command: 'codepet', args: '' } as never)
+    expect(opened).toEqual(['coding-pet'])
+    const closes = closed.length
     await $.command.run({ command: 'codepet', args: 'close' } as never)
+    expect(closed.length).toBe(closes + 1)
     await $.session.start({ cwd: 'C:/work' } as never)
     expect(opened.length).toBe(1)
 
-    // In the terminal it stays closed too.
+    // Left open, a new start still begins put away.
     await $.command.run({ command: 'codepet', args: 'show' } as never)
-    entrypoint = 'cli'
-    await $.session.start({ cwd: 'C:/work' } as never)
-    expect(opened.length).toBe(1)
-    entrypoint = 'claude-desktop'
+    expect(opened.length).toBe(2)
     await $.session.start({ cwd: 'C:/work' } as never)
     expect(opened.length).toBe(2)
+    expect(toasts).toEqual([])
   })
 })

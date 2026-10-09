@@ -141,7 +141,7 @@ export function labelOf(registry: CodingPetRegistry, kind: string): string {
 }
 
 export const HELP =
-  'Try /codepet (the pane), /codepet feed [apple|pizza|coffee|cookie], /codepet play, /codepet rest, /codepet stats, /codepet name <name>, /codepet species <blob|cat|crab>, /codepet close (the panel and strip), /codepet show, /codepet hide (silent too), /codepet reset.'
+  'Try /codepet (the pane), /codepet feed [apple|pizza|coffee|cookie], /codepet play, /codepet rest, /codepet stats, /codepet name <name>, /codepet species <blob|cat|crab>, /codepet close (puts it away), /codepet show, /codepet hide (silent too), /codepet reset.'
 
 /** What the panel shows for a pet in a mood: numbers rounded as drawn, lists as listed. */
 export function paneViewOf(pet: CodingPetState, registry: CodingPetRegistry, mood: CodingPetMood): CodingPetPaneView {

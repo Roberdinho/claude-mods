@@ -23,7 +23,7 @@
       "name": "coding-pet",
       "source": "./plugins/coding-pet",
       "description": "A Tamagotchi-style coding companion: it earns XP from edits, reads, passing tests and commits, levels up and evolves, and needs feeding, play and rest. /codepet",
-      "version": "0.1.2",
+      "version": "0.1.3",
       "category": "fun",
       "keywords": ["pet", "tamagotchi", "xp", "gamification"]
     },

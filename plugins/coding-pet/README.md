@@ -18,14 +18,14 @@ while you and Claude code, levels up and grows, and needs feeding, play and rest
 - **`/codepet`** (or the band's **panel** button, `o`) opens its side panel: level
   progress, stats, today's XP per source, lifetime totals, achievements, and a button per
   food. In the desktop app the pet there is an animated picture that bounces, blinks and
-  dozes; in a terminal it is the text sprite. The desktop app opens the panel when a
-  session starts (without taking the keyboard), unless `/codepet close` or
-  `/codepet hide` put it away; a terminal starts with the strip above the prompt.
+  dozes; in a terminal it is the text sprite. Every session starts with the pet put
+  away (no panel, strip, toasts or status line; it still earns XP) until you call it
+  with `/codepet` or `/codepet show`.
 
 | Command | Does |
 | --- | --- |
 | `/codepet` | open the panel (Esc or its **close** button closes it) |
-| `/codepet close`, `/codepet show` | put away the panel and the strip above the prompt (toasts still come), and bring the strip back |
+| `/codepet close`, `/codepet show` | put the pet away (panel, strip, toasts and status line), and bring it back |
 | `/codepet feed [apple\|pizza\|coffee\|cookie]` | feed it (apple when you don't say) |
 | `/codepet foods` | what each food does |
 | `/codepet play` | play ball: happier, but it costs energy |

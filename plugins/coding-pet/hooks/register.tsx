@@ -30,7 +30,7 @@ const frameAtom = atom({ plugin: 'coding-pet', key: 'frame' } as const, 0)
 const hiddenAtom = atom({ plugin: 'coding-pet', key: 'isHidden' } as const, false)
 const busyAtom = atom({ plugin: 'coding-pet', key: 'isBusy' } as const, false)
 const paneOpenAtom = atom({ plugin: 'coding-pet', key: 'isPaneOpen' } as const, false)
-const stripClosedAtom = atom({ plugin: 'coding-pet', key: 'isStripClosed' } as const, false)
+const stripClosedAtom = atom({ plugin: 'coding-pet', key: 'isStripClosed' } as const, true)
 const paneViewAtom = atom({ plugin: 'coding-pet', key: 'paneView' } as const, null)
 
 /** What this load of the module holds; a reload starts it over. */
@@ -79,20 +79,25 @@ function linesOf(effects: readonly CodingPetEffect[], name: string): string[] {
   })
 }
 
+/** Hidden, or put away (as every session starts): no strip, panel, toasts or status line. */
+async function isQuiet($: EngineInterface): Promise<boolean> {
+  return (await read($, hiddenAtom)) || (await read($, stripClosedAtom))
+}
+
 async function showStatus($: EngineInterface, pet: CodingPetState, mood: CodingPetMood, registry: CodingPetRegistry): Promise<void> {
-  const isShown = live.statusLine && !(await read($, hiddenAtom))
+  const isShown = live.statusLine && !(await isQuiet($))
   $.ui.status(isShown ? statusLine(pet, speciesOf(registry, pet.species), mood) : undefined)
 }
 
 /**
- * Toasts the milestones of an action, and each new need once. A hidden pet is
- * silent: it still notes its needs, so showing it again does not replay them.
+ * Toasts the milestones of an action, and each new need once. A hidden or put
+ * away pet is silent: it still notes its needs, so showing it does not replay them.
  */
 async function announce($: EngineInterface, pet: CodingPetState, effects: readonly CodingPetEffect[], now: number): Promise<void> {
   const registry = await registryOf($)
-  const isQuiet = await read($, hiddenAtom)
+  const isSilent = await isQuiet($)
   const milestones = linesOf(effects.filter(one => one.kind === 'levelUp' || one.kind === 'evolved' || one.kind === 'achievement'), pet.name)
-  if (!isQuiet) for (const line of milestones) $.ui.toast(line)
+  if (!isSilent) for (const line of milestones) $.ui.toast(line)
 
   const needs = needsOf(pet)
   for (const need of [...live.notified]) if (!needs.includes(need as never)) live.notified.delete(need)
@@ -100,7 +105,7 @@ async function announce($: EngineInterface, pet: CodingPetState, effects: readon
     for (const need of needs) {
       if (live.notified.has(need)) continue
       live.notified.add(need)
-      if (isQuiet) continue
+      if (isSilent) continue
       const hint = need === 'hungry' ? '/codepet feed' : need === 'tired' ? '/codepet rest' : '/codepet play'
       $.ui.toast(`${iconOf(pet, speciesOf(registry, pet.species))} ${pet.name} is ${need}. Try ${hint}.`)
     }
@@ -161,10 +166,15 @@ async function closePane($: EngineInterface): Promise<void> {
   await update($, paneOpenAtom, () => false)
 }
 
-/** Puts the strip above the prompt away (it keeps toasting) or brings it back. */
+/**
+ * Puts the pet away (panel, strip, toasts and status line) or brings it back.
+ * Every session starts with it put away, until /codepet calls it.
+ */
 async function setStripClosed($: EngineInterface, isClosed: boolean): Promise<void> {
   await update($, stripClosedAtom, () => isClosed)
-  await $.store.set('isStripClosed', isClosed)
+  if (isClosed) await closePane($)
+  const pet = await read($, petAtom)
+  if (pet !== null) await showStatus($, pet, moodOf(pet, await $.clock.now(), await read($, busyAtom)), await registryOf($))
 }
 
 /** Hides the pet entirely (strip, panel, toasts, status line) or brings it back. */
@@ -211,6 +221,7 @@ async function run($: EngineInterface, args: string): Promise<string> {
   switch (word) {
     case '':
       await setHidden($, false)
+      await setStripClosed($, false)
       await openPane($)
       return describe(pet, await registryOf($), moodOf(pet, await $.clock.now(), await read($, busyAtom)), await $.clock.now())
     case 'stats':
@@ -241,9 +252,8 @@ async function run($: EngineInterface, args: string): Promise<string> {
         .map(food => `${food.emoji} ${food.id}: ${Object.entries(food.effect).map(([stat, n]) => `${stat} ${n > 0 ? '+' : ''}${n}`).join(', ')}`)
         .join('\n')
     case 'close':
-      await closePane($)
       await setStripClosed($, true)
-      return `${pet.name}'s panel and strip are closed. /codepet opens the panel, /codepet show brings the strip back.`
+      return `${pet.name} is put away: no panel, strip or toasts. It still earns XP. /codepet brings it back.`
     case 'hide':
       await setHidden($, true)
       return `${pet.name} is hidden and silent: no strip, panel, toasts or status line. It still earns XP. /codepet show brings it back.`
@@ -252,7 +262,8 @@ async function run($: EngineInterface, args: string): Promise<string> {
       await setStripClosed($, false)
       const now = await $.clock.now()
       const needs = needsOf(decay(pet, now, live.settings))
-      return `${pet.name} is back above the prompt.${needs.length === 0 ? '' : ` It is ${needs.join(' and ')}.`}`
+      if ((await $.env.get('CLAUDE_CODE_ENTRYPOINT')) === 'claude-desktop') await openPane($, false)
+      return `${pet.name} is back.${needs.length === 0 ? '' : ` It is ${needs.join(' and ')}.`}`
     }
     case 'reset': {
       if (tail.toLowerCase() !== 'confirm') return `This says goodbye to ${pet.name} (level ${pet.level}) and starts over with an egg. Sure? /codepet reset confirm`
@@ -326,15 +337,11 @@ export const register: Register = (on, options) => {
     await update($, petAtom, () => pet)
     await $.store.set('pet', pet)
     await refreshPane($)
-    // A load starts with the panel closed, even one left open before a reload...
-    await closePane($)
-    const isStripClosed = (await $.store.get('isStripClosed')) === true
-    await update($, stripClosedAtom, () => isStripClosed)
     const isHidden = (await $.store.get('isHidden')) === true
     await update($, hiddenAtom, () => isHidden)
-    // ...except in the desktop app, where the pet lives in the panel unless put away.
-    const isDesktop = (await $.env.get('CLAUDE_CODE_ENTRYPOINT')) === 'claude-desktop'
-    if (isDesktop && !isHidden && !isStripClosed) await openPane($, false)
+    // Every load starts put away, panel closed, even one left open before a
+    // reload: the pet shows only once /codepet calls it.
+    await setStripClosed($, true)
     await announce($, pet, [], now)
 
     animate($, !isHidden)
@@ -606,7 +613,7 @@ export const register: Register = (on, options) => {
           ))}
           <Button key="play" label="play" hotkey="p" onPress={() => care($, { kind: 'play' })} />
           <Button key="rest" label={mood === 'sleeping' ? 'wake' : 'rest'} hotkey="r" onPress={() => care($, { kind: 'rest' })} />
-          <Button key="close" label="close" hotkey="x" role="dismiss" dimColor onPress={() => closePane($)} />
+          <Button key="close" label="close" hotkey="x" role="dismiss" dimColor onPress={() => setStripClosed($, true)} />
         </Box>
       </Box>
     )
