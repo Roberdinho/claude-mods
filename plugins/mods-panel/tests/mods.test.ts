@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'claude-code/testing'
 import type { CommandInfo } from 'claude-code'
 
-import { commandLabel, groupMods, hotkey, needsArgs, promptText } from '../hooks/mods'
+import { commandLabel, findInstalls, groupMods, hotkey, needsArgs, promptText, uninstallArgv } from '../hooks/mods'
 
 const COMMANDS: CommandInfo[] = [
   { name: 'help', description: 'Help', source: 'builtin' },
@@ -43,5 +43,33 @@ describe('picking', () => {
     expect(hotkey(0)).toBe('1')
     expect(hotkey(8)).toBe('9')
     expect(hotkey(9)).toBe(undefined)
+  })
+})
+
+describe('uninstalling', () => {
+  const LIST = JSON.stringify([
+    { id: 'claude-dj@rwoel-mods', scope: 'user', enabled: true },
+    { id: 'claude-dj-extra@rwoel-mods', scope: 'user', enabled: true },
+    { id: 'claude-dj@other', scope: 'project', enabled: false },
+    { id: 'activity@claude-mods', scope: 'user', enabled: true },
+  ])
+
+  test('finds every install of the mod by exact name, in each scope', () => {
+    expect(findInstalls(LIST, 'claude-dj')).toEqual([
+      { id: 'claude-dj@rwoel-mods', scope: 'user' },
+      { id: 'claude-dj@other', scope: 'project' },
+    ])
+    expect(findInstalls(LIST, 'nope')).toEqual([])
+  })
+
+  test('finds nothing in output that is not a JSON list', () => {
+    expect(findInstalls('Installed plugins:', 'claude-dj')).toEqual([])
+    expect(findInstalls('{}', 'claude-dj')).toEqual([])
+  })
+
+  test('uninstalls from the scope it was installed in', () => {
+    expect(uninstallArgv({ id: 'claude-dj@other', scope: 'project' })).toEqual([
+      'claude', 'plugin', 'uninstall', 'claude-dj@other', '--scope', 'project',
+    ])
   })
 })

@@ -7,6 +7,10 @@ declare module 'claude-code' {
       /** The mod whose commands the panel shows; null shows the list of mods. */
       selected: string | null
       hints: Hints
+      /** The mod whose uninstall is waiting on a yes; null when none is. */
+      confirming: string | null
+      /** The mod being uninstalled right now; null when none is. */
+      uninstalling: string | null
     }
   }
 }

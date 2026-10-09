@@ -47,3 +47,30 @@ export function commandLabel(command: ModCommand): string {
 export function hotkey(index: number): string | undefined {
   return index < 9 ? String(index + 1) : undefined
 }
+
+/** One entry of `claude plugin list --json`, the fields the uninstall needs. */
+export type Install = { id: string; scope: string }
+
+/**
+ * The installs of the mod named `mod` in `claude plugin list --json` output:
+ * every entry whose id is `<mod>@<marketplace>`, in any scope.
+ */
+export function findInstalls(listJson: string, mod: string): Install[] {
+  let entries: unknown
+  try {
+    entries = JSON.parse(listJson)
+  } catch {
+    return []
+  }
+  if (!Array.isArray(entries)) return []
+
+  return entries
+    .filter((p): p is Install => typeof p?.id === 'string' && typeof p?.scope === 'string')
+    .filter(p => p.id.slice(0, p.id.lastIndexOf('@')) === mod)
+    .map(p => ({ id: p.id, scope: p.scope }))
+}
+
+/** The command that uninstalls one install from its own scope. */
+export function uninstallArgv(install: Install): string[] {
+  return ['claude', 'plugin', 'uninstall', install.id, '--scope', install.scope]
+}
