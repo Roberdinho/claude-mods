@@ -4,7 +4,7 @@ import type { EngineInterface, Register } from 'claude-code'
 import type { SessionView } from '../types'
 import {
   LINE_PATTERN, TICK_MS, age, applyLines, hotkey, label, newTrack, openerArgv, parsePids, parseRegistry,
-  runningTasks, sameView, sessionLink, sortSessions, statusText, taskLabel,
+  runningTasks, sameView, sessionLink, sortSessions, bandText, counts, taskLabel,
 } from './tasks'
 import type { RegistryEntry, Track } from './tasks'
 
@@ -44,7 +44,6 @@ type Followed = { file: string | null; offset: number; track: Track }
 // Starts over on a reload, which rereads each transcript once.
 const followed = new Map<string, Followed>()
 let refreshing = false
-let lastStatus: string | undefined
 
 async function isWindows($: EngineInterface): Promise<boolean> {
   return (await $.env.get('OS')) === 'Windows_NT'
@@ -156,12 +155,6 @@ async function refresh($: EngineInterface) {
     const minute = Math.floor(now / 60_000) * 60_000
     if ((await read($, nowAtom)) !== minute) await update($, nowAtom, () => minute)
     if ((await read($, errorAtom)) !== null) await update($, errorAtom, () => null)
-
-    const text = statusText(sorted)
-    if (text !== lastStatus) {
-      lastStatus = text
-      $.ui.status(text)
-    }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     if ((await read($, errorAtom)) !== message) await update($, errorAtom, () => message)
@@ -180,6 +173,11 @@ async function openSession($: EngineInterface, s: SessionView) {
   }
 }
 
+async function openPane($: EngineInterface) {
+  void refresh($)
+  await $.ui.open({ id: PANE, title: TITLE, focus: true, closeOnEscape: true })
+}
+
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     await $.command.register({
@@ -193,10 +191,36 @@ export const register: Register = on => {
   })
 
   on('command.run', { command: 'alltasks' }, async $ => {
-    void refresh($)
-    await $.ui.open({ id: PANE, title: TITLE, focus: true, closeOnEscape: true })
+    await openPane($)
 
     return { text: 'Background tasks panel opened.' }
+  })
+
+  // One line above the prompt in every session; Details opens the panel.
+  // Another plugin's band (the engine's next) stays, drawn below this line.
+  on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
+    if (e.props.hasSurvey) return next(e)
+    const { Box, Text, Button } = $.ui.resolve(e)
+    const all = await read($, sessions)
+    const error = await read($, errorAtom)
+    const self = await $.session.id()
+    const busy = counts(all).tasks > 0
+    const below = await next(e)
+    const line = (
+      <Box key="session-tasks" flexDirection="row" gap={1}>
+        <Text color={busy ? 'cyan' : undefined} dimColor={!busy}>{busy ? '●' : '○'}</Text>
+        <Text dimColor={!busy}>{error !== null && all.length === 0 ? 'Background tasks: could not read the sessions' : bandText(all, self)}</Text>
+        <Button key="details" label="Details" plain onPress={() => openPane($)} />
+      </Box>
+    )
+    if (below == null) return line
+
+    return (
+      <Box flexDirection="column">
+        {line}
+        {below}
+      </Box>
+    )
   })
 
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {

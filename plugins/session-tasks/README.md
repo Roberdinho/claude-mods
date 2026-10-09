@@ -2,7 +2,7 @@
 
 A session can show as **Completed** while background tasks it started (shells, subagents, monitors, workflows) are still running. Claude Code shows background tasks only inside the session that owns them. This mod collects them from every running session, including sessions that don't run the mod:
 
-- **Status line**: `3 background tasks in 2 sessions · /alltasks` whenever anything runs anywhere.
+- **A line above the prompt**, in every session from the start: `● 3 background tasks running in 2 sessions · 1 here`, or a dim `○ No background tasks running`. Its **Details** button opens the panel. Another mod's band above the prompt (claude-dj's now playing) stays, below this line.
 - **`/alltasks`**: a side panel listing each session (by title) with its running tasks and when each started. Press `i` to also show idle sessions.
 - **Open**: each desktop app session in the panel has an Open button (keys `1`–`9`) that switches the app to it. It hands the session's `claude://claude.ai/epitaxy/<id>` link to the OS (`rundll32` on Windows, `open` on macOS, `xdg-open` on Linux). Terminal sessions have no such link and no button.
 

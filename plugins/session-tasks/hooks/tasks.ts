@@ -191,12 +191,15 @@ export function counts(list: readonly SessionView[]): { tasks: number; sessions:
   return { tasks: busy.reduce((n, s) => n + s.tasks.length, 0), sessions: busy.length }
 }
 
-/** The status line, or undefined when nothing runs anywhere. */
-export function statusText(list: readonly SessionView[]): string | undefined {
+/** The band's line: how many tasks run, in how many sessions, how many in this one. */
+export function bandText(list: readonly SessionView[], self: string | null): string {
+  if (list.length === 0) return 'Reading background tasks…'
   const { tasks, sessions } = counts(list)
-  if (tasks === 0) return undefined
+  if (tasks === 0) return 'No background tasks running'
+  const here = list.find(s => s.sessionId === self)?.tasks.length ?? 0
+  const where = sessions === 1 && here > 0 ? 'in this session' : `in ${sessions} session${sessions === 1 ? '' : 's'}`
 
-  return `${tasks} background task${tasks === 1 ? '' : 's'} in ${sessions} session${sessions === 1 ? '' : 's'} · /alltasks`
+  return `${tasks} background task${tasks === 1 ? '' : 's'} running ${where}${here > 0 && sessions > 1 ? ` · ${here} here` : ''}`
 }
 
 export function age(ms: number): string {

@@ -2,7 +2,7 @@ import { describe, expect, test } from 'claude-code/testing'
 
 import {
   age, applyLines, hotkey, newTrack, openerArgv, parsePids, parseRegistry, runningTasks, sessionLink,
-  statusText, taskLabel,
+  bandText, taskLabel,
 } from '../hooks/tasks'
 
 const T0 = Date.parse('2026-10-07T12:00:00.000Z')
@@ -90,13 +90,16 @@ describe('sessions', () => {
     expect([...parsePids('  1\n 345\n')]).toEqual([1, 345])
   })
 
-  test('status line counts the busy sessions', () => {
+  test('the band counts the tasks, the busy sessions and this one', () => {
     const task = { id: 'b', type: 'shell', description: 'x', startedAt: T0 }
     const s = (id: string, n: number) => ({
       sessionId: id, title: id, cwd: '/x', status: 'idle', hasTranscript: true, link: null, tasks: Array(n).fill(task),
     })
-    expect(statusText([s('a', 2), s('b', 1), s('c', 0)])).toBe('3 background tasks in 2 sessions · /alltasks')
-    expect(statusText([s('c', 0)])).toBe(undefined)
+    expect(bandText([s('a', 2), s('b', 1), s('c', 0)], 'c')).toBe('3 background tasks running in 2 sessions')
+    expect(bandText([s('a', 2), s('b', 1), s('c', 0)], 'a')).toBe('3 background tasks running in 2 sessions · 2 here')
+    expect(bandText([s('a', 1), s('c', 0)], 'a')).toBe('1 background task running in this session')
+    expect(bandText([s('c', 0)], 'c')).toBe('No background tasks running')
+    expect(bandText([], 'c')).toBe('Reading background tasks…')
   })
 
   test('desktop sessions get a link the OS opens in the app; terminal ones none', () => {

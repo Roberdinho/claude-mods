@@ -19,4 +19,4 @@ Then run `/reload-plugins` (or start a new session) and type `/polaroid`, `/dj`,
 | [claude-dj](plugins/claude-dj) | Control YouTube Music, Spotify and other media: now-playing band, `/music` pane with cover art, `/play` `/next` `/vol`, `/spotify`, music tools for Claude |
 | [coding-pet](plugins/coding-pet) | A Tamagotchi-style coding companion that earns XP from edits, tests and commits, levels up, and needs feeding, play and rest, `/codepet` |
 | [mods-panel](plugins/mods-panel) | A side panel listing your installed mods; pick one to see its commands, pick a command to run it (or fill the prompt when it takes arguments), `/mods` |
-| [session-tasks](plugins/session-tasks) | Every running session's background tasks in one side panel, read from their transcripts, plus a status line count, even for sessions marked Completed, `/alltasks` |
+| [session-tasks](plugins/session-tasks) | A line above the prompt counting every running session's background tasks, with a Details button for a side panel listing them, read from their transcripts, even for sessions marked Completed, `/alltasks` |
