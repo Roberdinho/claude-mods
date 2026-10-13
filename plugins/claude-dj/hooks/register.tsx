@@ -836,9 +836,12 @@ export const register: Register = (on, options) => {
     const sound = player.volume
     // ♥ saves to Liked Songs: only while Spotify itself plays and the sign-in is there.
     const canLike = appName(track.app) === 'Spotify' && (await read($, spotifyAtom)) !== null
+    // Other mods' bands draw here too: keep them, below the music row.
+    const below = await next(e)
     const { Box, Button, Text } = $.ui.resolve(e)
 
     return (
+      <Box flexDirection="column">
       <Box flexDirection="row" gap={1}>
         <Text dimColor={!playing}>{`${playing ? '♪' : '⏸'} ${trackLine(track, 60)}`}</Text>
         <Text dimColor>{`· ${appName(track.app)}`}</Text>
@@ -857,6 +860,8 @@ export const register: Register = (on, options) => {
           </Box>
         )}
         <Button key="hide" label="✕" dimColor onPress={() => hideFromBand($)} />
+      </Box>
+      {below}
       </Box>
     )
   })

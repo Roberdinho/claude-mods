@@ -15,7 +15,7 @@
       "name": "claude-dj",
       "source": "./plugins/claude-dj",
       "description": "Control YouTube Music, Spotify or anything playing: a now-playing band, a /music pane with cover art and progress, /play /pause /next /prev /vol, Spotify search, play, queue and like, and music tools for Claude",
-      "version": "0.4.0",
+      "version": "0.4.1",
       "category": "productivity",
       "keywords": ["music", "youtube music", "spotify", "now playing"]
     },
