@@ -7,6 +7,17 @@ that shows up in the Windows media flyout.
 ♪ Midnight City — M83 · Chrome  ⏮  ⏸  ⏭  🔊 − 40% +  ✕
 ```
 
+## Install
+
+```bash
+claude plugin marketplace add Roberdinho/claude-mods
+claude plugin install claude-dj@rwoel-mods
+```
+
+Then run `/reload-plugins` (or start a new session) and type `/dj`. Playback controls work
+right away; for searching and playing songs on Spotify, do the [Spotify setup](#setup-once)
+too. To update later: `claude plugin marketplace update rwoel-mods`.
+
 ## Use
 
 - **Now-playing band** above the prompt, with previous / play-pause / next buttons and
@@ -63,8 +74,29 @@ or queue).
 1. Go to [developer.spotify.com/dashboard](https://developer.spotify.com/dashboard), create an
    app, and pick **Web API**.
 2. Add the Redirect URI `http://127.0.0.1:43117/callback` exactly.
-3. Copy the app's **Client ID** into claude-dj's `spotifyClientId` setting.
-4. Run `/spotify login` and approve in the browser tab that opens.
+3. Copy the app's **Client ID** into claude-dj's `spotifyClientId` setting, either in the
+   **Spotify Client ID** field of claude-dj's options in the `/plugin` menu, or in your user
+   settings (`~/.claude/settings.json`, on Windows `%USERPROFILE%\.claude\settings.json`):
+
+   ```json
+   {
+     "pluginConfigs": {
+       "claude-dj": {
+         "options": {
+           "spotifyClientId": "your-client-id"
+         }
+       }
+     }
+   }
+   ```
+
+   If the file already has a `pluginConfigs` key, add the `claude-dj` entry inside it.
+   Then run `/reload-plugins`.
+4. Run `/spotify login` and approve in the browser tab that opens. If `/spotify` still
+   shows these setup steps, the Client ID wasn't picked up.
+
+Each person needs their own Spotify app: while an app is in development mode, Spotify only
+lets in the accounts added under its **User Management**. The Client ID isn't a secret.
 
 The sign-in uses PKCE, so there's no client secret. Tokens are kept in the mod's own store
 on this machine and refreshed automatically. `/spotify logout` forgets them; remove the app at
