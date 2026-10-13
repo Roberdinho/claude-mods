@@ -74,7 +74,9 @@ or queue).
 1. Go to [developer.spotify.com/dashboard](https://developer.spotify.com/dashboard), create an
    app, and pick **Web API**.
 2. Add the Redirect URI `http://127.0.0.1:43117/callback` exactly.
-3. Copy the app's **Client ID** into claude-dj's `spotifyClientId` setting, either in the
+3. Copy the app's **Client ID**: in the dashboard, open your app, click **Settings**, and
+   it's at the top of **Basic Information** (32 letters and digits). You don't need the
+   client secret below it. Put the Client ID in claude-dj's `spotifyClientId` setting, either in the
    **Spotify Client ID** field of claude-dj's options in the `/plugin` menu, or in your user
    settings (`~/.claude/settings.json`, on Windows `%USERPROFILE%\.claude\settings.json`):
 
