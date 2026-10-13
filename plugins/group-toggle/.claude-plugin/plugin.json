@@ -1,0 +1,9 @@
+{
+  "name": "group-toggle",
+  "version": "0.1.0",
+  "description": "Switch the desktop app's session sidebar between grouping by folder and by state in one click: a line above the prompt and /group",
+  "author": { "name": "R. Woeltjes" },
+  "license": "MIT",
+  "keywords": ["sidebar", "sessions", "group", "folder", "state", "desktop"],
+  "types": "./types/index.d.ts"
+}

@@ -50,6 +50,14 @@
       "version": "0.3.0",
       "category": "fun",
       "keywords": ["game", "god game", "sandbox", "simulation", "pixel art"]
+    },
+    {
+      "name": "group-toggle",
+      "source": "./plugins/group-toggle",
+      "description": "Switch the desktop app's session sidebar between grouping by folder and by state in one click: a line above the prompt and /group",
+      "version": "0.1.0",
+      "category": "productivity",
+      "keywords": ["sidebar", "sessions", "group", "folder", "state", "desktop"]
     }
   ]
 }
