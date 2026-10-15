@@ -12,7 +12,7 @@ The mod calls the desktop app's own sidebar tools (`ccd_sidebar`): `list_section
 - Choosing **State** also sets the status filter to *active*, as the menu does.
 - Choosing another grouping in the menu (date, none, ...) leaves both dots open; the buttons still work.
 
-If the sidebar cannot be read or changed (no app window open, a terminal session), the line shows a ⚠ with the reason.
+The app connects its sidebar tools a moment after a session starts, so the mod keeps trying for about 30 seconds. If the sidebar still cannot be read or changed (no app window open, a terminal session), the line shows a ⚠ with the reason.
 
 ## Limits
 

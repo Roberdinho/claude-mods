@@ -11,11 +11,23 @@ function textOf(content: { type: string; text?: string }[]) {
   return content.map(block => (block.type === 'text' ? block.text ?? '' : '')).join('')
 }
 
-async function refresh($: EngineInterface) {
+// The app connects its sidebar tools a moment after the session starts: until then
+// a call fails ("no connected MCP tool"). Keep trying for a while before warning.
+const RETRY_MS = 1000
+const RETRIES = 30
+
+async function refresh($: EngineInterface, attempt = 0) {
+  const retryOr = async (message: string) => {
+    if (attempt < RETRIES) {
+      $.clock.after(RETRY_MS, () => void refresh($, attempt + 1))
+      return
+    }
+    await update($, lastError, () => message)
+  }
   try {
     const result = await $.mcp.call(SIDEBAR, 'list_sections')
     if (result.isError) {
-      await update($, lastError, () => textOf(result.content))
+      await retryOr(textOf(result.content))
       return
     }
     await update($, lastError, () => null)
@@ -24,7 +36,7 @@ async function refresh($: EngineInterface) {
     const now: Grouping = by === 'project' || by === 'state' ? by : 'other'
     await update($, grouping, () => now)
   } catch (error) {
-    await update($, lastError, () => String(error))
+    await retryOr(String(error))
   }
 }
 
@@ -41,6 +53,7 @@ async function setGrouping($: EngineInterface, to: 'project' | 'state') {
     $.ui.toast(`Sidebar not changed: ${textOf(result.content)}`)
     return false
   }
+  await update($, lastError, () => null)
   await update($, grouping, () => to)
   return true
 }

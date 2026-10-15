@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'claude-code/testing'
+import { describe, expect, mock, test } from 'claude-code/testing'
 
 describe('the session', () => {
   test('reads the grouping, the band and /group switch it', async ($, on) => {
@@ -40,5 +40,33 @@ describe('the session', () => {
     await $.command.run({ command: 'group', args: 'state' } as never)
     expect(groupBy).toBe('state')
     expect(calls).toContain('set_view state')
+  })
+
+  test('waits for the sidebar tools instead of warning when they connect late', async ($, on) => {
+    const clock = mock.clock(on)
+    let connected = false
+    on('mcp.call', () => {
+      if (!connected) throw new Error('no connected MCP tool "list_sections" on a server named "ccd_sidebar"')
+      const text = JSON.stringify([{ id: 'sessions', group_by: 'state' }])
+      return { value: { content: [{ type: 'text', text }], isError: false } }
+    })
+    on('session.start', (_$, e) => ({ cwd: e.cwd }))
+    on('command.register', (_$, e) => ({ value: { command: e.name } }))
+    on('ui.render', { component: 'AbovePrompt' }, () => ({ type: 'Box', props: {}, children: [] }))
+
+    await $.session.start({ cwd: 'C:/work' } as never)
+    await clock.settle()
+    const ui = await $.ui.mount({
+      plugin: 'group-toggle',
+      surface: 'desktop',
+      component: 'AbovePrompt',
+      props: { hasSurvey: false, isWorking: false, maxRows: 4, bodyColumns: 100 } as never,
+    })
+    expect(await ui.find({ type: 'Text', text: /⚠/ })).toBeUndefined()
+
+    connected = true
+    await clock.advance(1000)
+    expect(await ui.find({ key: 'state', label: '● State' } as never)).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /⚠/ })).toBeUndefined()
   })
 })
