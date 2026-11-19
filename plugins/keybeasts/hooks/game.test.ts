@@ -115,6 +115,18 @@ test('oude of kapotte opslag wordt veilig ingelezen', async () => {
   expect(m.stats.turns).toBe(0)
 })
 
+test('een bandana uit een oude opslag wordt een propellerpet', async () => {
+  const m = migrate({
+    v: 1,
+    owned: ['kat'],
+    inventory: { bandana: 2, propellerpet: 1, pet: 1 },
+    equipped: { kat: { hoed: 'bandana', instrument: 'drums' } },
+  })
+  expect(m.inventory).toEqual({ propellerpet: 3, pet: 1 })
+  expect(m.equipped.kat).toEqual({ hoed: 'propellerpet', instrument: 'drums' })
+  expect(ITEMS.some(i => i.id === 'bandana')).toBe(false)
+})
+
 test('twee sessies in dezelfde klokminuut tellen die minuut maar één keer', async () => {
   const now = 50 * 60_000 + 30_000
   let s = { ...started(), chestProgress: 0, lastEventAt: now - 5_000 }

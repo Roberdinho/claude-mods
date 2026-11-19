@@ -70,7 +70,6 @@ export const BEASTS: readonly Beast[] = [
 export const ITEMS: readonly Item[] = [
   { id: 'pet', name: 'Pet', slot: 'hoed', rarity: 'gewoon' },
   { id: 'muts', name: 'Muts', slot: 'hoed', rarity: 'gewoon' },
-  { id: 'bandana', name: 'Bandana', slot: 'hoed', rarity: 'gewoon' },
   { id: 'keyboard', name: 'Keyboard', slot: 'instrument', rarity: 'gewoon' },
   { id: 'hartje', name: 'Hartje', slot: 'emote', rarity: 'gewoon' },
   { id: 'zzz', name: 'Zzz', slot: 'emote', rarity: 'gewoon' },

@@ -58,6 +58,18 @@ export const newSave = (): Save => ({
 const num = (v: unknown, d: number): number => (typeof v === 'number' && Number.isFinite(v) ? v : d)
 
 /** Leest wat er in de store stond; onbekend of kapot geeft een nieuwe save, ontbrekende velden worden aangevuld. */
+/** Items die niet meer bestaan en waar ze in een oude opslag door vervangen worden. */
+const RENAMED: Record<string, string> = { bandana: 'propellerpet' }
+
+const renameItems = (inv: Record<string, number>): Record<string, number> => {
+  const out: Record<string, number> = {}
+  for (const [id, n] of Object.entries(inv)) {
+    const to = RENAMED[id] ?? id
+    out[to] = (out[to] ?? 0) + n
+  }
+  return out
+}
+
 export const migrate = (raw: unknown): Save => {
   const base = newSave()
   if (typeof raw !== 'object' || raw === null) return base
@@ -72,8 +84,13 @@ export const migrate = (raw: unknown): Save => {
     chests: num(r.chests, base.chests),
     chestProgress: num(r.chestProgress, 0),
     eggs: Array.isArray(r.eggs) ? r.eggs.filter(e => e && typeof e.id === 'string').map(e => ({ id: e.id, progress: num(e.progress, 0) })) : [],
-    inventory: typeof r.inventory === 'object' && r.inventory ? { ...r.inventory } : {},
-    equipped: typeof r.equipped === 'object' && r.equipped ? { ...r.equipped } : {},
+    inventory: renameItems(typeof r.inventory === 'object' && r.inventory ? r.inventory : {}),
+    equipped: Object.fromEntries(
+      Object.entries(typeof r.equipped === 'object' && r.equipped ? r.equipped : {}).map(([beast, gear]) => [
+        beast,
+        { ...gear, ...(gear?.hoed && RENAMED[gear.hoed] ? { hoed: RENAMED[gear.hoed] } : {}) },
+      ]),
+    ),
     stats: { ...base.stats, ...(typeof r.stats === 'object' && r.stats ? r.stats : {}) },
     achievements: Array.isArray(r.achievements) ? r.achievements.filter(a => typeof a === 'string') : [],
     tutorialStep: num(r.tutorialStep, 0),

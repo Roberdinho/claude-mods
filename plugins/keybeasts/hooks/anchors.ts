@@ -17,7 +17,6 @@ export const HAT_PLACE: Record<string, Record<string, { x: number; y: number; w:
   axolotl: {
     pet: { x: 35.0, y: -1.5, w: 80.8 },
     muts: { x: 16.8, y: -10.7, w: 125.2 },
-    bandana: { x: 40.8, y: 5.2, w: 78.4 },
     koptelefoon: { x: 24.0, y: 23.0, w: 112 },
     cowboyhoed: { x: 21.8, y: -11.7, w: 110.7 },
     propellerpet: { x: 18.1, y: -2.1, w: 98.2 },
@@ -31,7 +30,6 @@ export const HAT_PLACE: Record<string, Record<string, { x: number; y: number; w:
   big: {
     pet: { x: 35.0, y: -1.5, w: 80.8 },
     muts: { x: 16.8, y: -10.7, w: 125.2 },
-    bandana: { x: 40.8, y: 5.2, w: 78.4 },
     koptelefoon: { x: 24.0, y: 23.0, w: 112 },
     cowboyhoed: { x: 21.8, y: -11.7, w: 110.7 },
     propellerpet: { x: 18.1, y: -2.1, w: 98.2 },
@@ -45,7 +43,6 @@ export const HAT_PLACE: Record<string, Record<string, { x: number; y: number; w:
   cavia: {
     pet: { x: 35.0, y: -1.5, w: 80.8 },
     muts: { x: 16.8, y: -10.7, w: 125.2 },
-    bandana: { x: 40.8, y: 5.2, w: 78.4 },
     koptelefoon: { x: 24.0, y: 23.0, w: 112 },
     cowboyhoed: { x: 21.8, y: -11.7, w: 110.7 },
     propellerpet: { x: 18.1, y: -2.1, w: 98.2 },
@@ -59,7 +56,6 @@ export const HAT_PLACE: Record<string, Record<string, { x: number; y: number; w:
   hond: {
     pet: { x: 35.0, y: -1.5, w: 80.8 },
     muts: { x: 16.8, y: -10.7, w: 125.2 },
-    bandana: { x: 40.8, y: 5.2, w: 78.4 },
     koptelefoon: { x: 24.0, y: 23.0, w: 112 },
     cowboyhoed: { x: 21.8, y: -11.7, w: 110.7 },
     propellerpet: { x: 18.1, y: -2.1, w: 98.2 },
@@ -73,7 +69,6 @@ export const HAT_PLACE: Record<string, Record<string, { x: number; y: number; w:
   kanarie: {
     pet: { x: 35.0, y: -1.5, w: 80.8 },
     muts: { x: 16.8, y: -10.7, w: 125.2 },
-    bandana: { x: 40.8, y: 5.2, w: 78.4 },
     koptelefoon: { x: 24.0, y: 23.0, w: 112 },
     cowboyhoed: { x: 21.8, y: -11.7, w: 110.7 },
     propellerpet: { x: 18.1, y: -2.1, w: 98.2 },
@@ -87,7 +82,6 @@ export const HAT_PLACE: Record<string, Record<string, { x: number; y: number; w:
   kat: {
     pet: { x: 35.0, y: -1.5, w: 80.8 },
     muts: { x: 16.8, y: -10.7, w: 125.2 },
-    bandana: { x: 40.8, y: 5.2, w: 78.4 },
     koptelefoon: { x: 24.0, y: 23.0, w: 112 },
     cowboyhoed: { x: 21.8, y: -11.7, w: 110.7 },
     propellerpet: { x: 18.1, y: -2.1, w: 98.2 },
@@ -101,7 +95,6 @@ export const HAT_PLACE: Record<string, Record<string, { x: number; y: number; w:
   konijn: {
     pet: { x: 35.0, y: -1.5, w: 80.8 },
     muts: { x: 16.8, y: -10.7, w: 125.2 },
-    bandana: { x: 40.8, y: 5.2, w: 78.4 },
     koptelefoon: { x: 24.0, y: 23.0, w: 112 },
     cowboyhoed: { x: 21.8, y: -11.7, w: 110.7 },
     propellerpet: { x: 18.1, y: -2.1, w: 98.2 },
@@ -115,7 +108,6 @@ export const HAT_PLACE: Record<string, Record<string, { x: number; y: number; w:
   otter: {
     pet: { x: 35.0, y: -1.5, w: 80.8 },
     muts: { x: 16.8, y: -10.7, w: 125.2 },
-    bandana: { x: 40.8, y: 5.2, w: 78.4 },
     koptelefoon: { x: 24.0, y: 23.0, w: 112 },
     cowboyhoed: { x: 21.8, y: -11.7, w: 110.7 },
     propellerpet: { x: 18.1, y: -2.1, w: 98.2 },
@@ -129,7 +121,6 @@ export const HAT_PLACE: Record<string, Record<string, { x: number; y: number; w:
   uil: {
     pet: { x: 35.0, y: -1.5, w: 80.8 },
     muts: { x: 16.8, y: -10.7, w: 125.2 },
-    bandana: { x: 40.8, y: 5.2, w: 78.4 },
     koptelefoon: { x: 24.0, y: 23.0, w: 112 },
     cowboyhoed: { x: 21.8, y: -11.7, w: 110.7 },
     propellerpet: { x: 18.1, y: -2.1, w: 98.2 },
@@ -143,7 +134,6 @@ export const HAT_PLACE: Record<string, Record<string, { x: number; y: number; w:
   vos: {
     pet: { x: 35.0, y: -1.5, w: 80.8 },
     muts: { x: 16.8, y: -10.7, w: 125.2 },
-    bandana: { x: 40.8, y: 5.2, w: 78.4 },
     koptelefoon: { x: 24.0, y: 23.0, w: 112 },
     cowboyhoed: { x: 21.8, y: -11.7, w: 110.7 },
     propellerpet: { x: 18.1, y: -2.1, w: 98.2 },
