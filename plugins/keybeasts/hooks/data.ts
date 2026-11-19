@@ -75,7 +75,7 @@ export const ITEMS: readonly Item[] = [
   { id: 'zzz', name: 'Zzz', slot: 'emote', rarity: 'gewoon' },
   { id: 'koptelefoon', name: 'Koptelefoon', slot: 'hoed', rarity: 'ongewoon' },
   { id: 'cowboyhoed', name: 'Cowboyhoed', slot: 'hoed', rarity: 'ongewoon' },
-  { id: 'propellerpet', name: 'Regenboogpet', slot: 'hoed', rarity: 'ongewoon' },
+  { id: 'propellerpet', name: 'Propellerpet', slot: 'hoed', rarity: 'ongewoon' },
   { id: 'drums', name: 'Drums', slot: 'instrument', rarity: 'ongewoon' },
   { id: 'vuur', name: 'Vuur', slot: 'emote', rarity: 'ongewoon' },
   { id: 'uitroep', name: 'Uitroepteken', slot: 'emote', rarity: 'ongewoon' },
