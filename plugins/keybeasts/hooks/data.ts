@@ -70,12 +70,12 @@ export const BEASTS: readonly Beast[] = [
 export const ITEMS: readonly Item[] = [
   { id: 'pet', name: 'Pet', slot: 'hoed', rarity: 'gewoon' },
   { id: 'muts', name: 'Muts', slot: 'hoed', rarity: 'gewoon' },
+  { id: 'propellerpet', name: 'Propellerpet', slot: 'hoed', rarity: 'gewoon' },
   { id: 'keyboard', name: 'Keyboard', slot: 'instrument', rarity: 'gewoon' },
   { id: 'hartje', name: 'Hartje', slot: 'emote', rarity: 'gewoon' },
   { id: 'zzz', name: 'Zzz', slot: 'emote', rarity: 'gewoon' },
   { id: 'koptelefoon', name: 'Koptelefoon', slot: 'hoed', rarity: 'ongewoon' },
   { id: 'cowboyhoed', name: 'Cowboyhoed', slot: 'hoed', rarity: 'ongewoon' },
-  { id: 'propellerpet', name: 'Propellerpet', slot: 'hoed', rarity: 'ongewoon' },
   { id: 'drums', name: 'Drums', slot: 'instrument', rarity: 'ongewoon' },
   { id: 'vuur', name: 'Vuur', slot: 'emote', rarity: 'ongewoon' },
   { id: 'uitroep', name: 'Uitroepteken', slot: 'emote', rarity: 'ongewoon' },
