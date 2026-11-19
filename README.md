@@ -11,9 +11,10 @@ claude plugin install mods-panel@rwoel-mods
 claude plugin install session-tasks@rwoel-mods
 claude plugin install omnirealm@rwoel-mods
 claude plugin install group-toggle@rwoel-mods
+claude plugin install keybeasts@rwoel-mods
 ```
 
-Then run `/reload-plugins` (or start a new session) and type `/polaroid`, `/dj`, `/codepet`, `/mods`, `/alltasks`, `/omnirealm` or `/group`.
+Then run `/reload-plugins` (or start a new session) and type `/polaroid`, `/dj`, `/codepet`, `/mods`, `/alltasks`, `/omnirealm`, `/group` or `/keybeasts`.
 
 | Mod | What it does |
 | --- | --- |
@@ -24,3 +25,4 @@ Then run `/reload-plugins` (or start a new session) and type `/polaroid`, `/dj`,
 | [session-tasks](plugins/session-tasks) | A line above the prompt counting every running session's background tasks, with a Details button for a side panel listing them, read from their transcripts, even for sessions marked Completed, `/alltasks` |
 | [omnirealm](plugins/omnirealm) | A god-simulator sandbox in a side panel: terraform a procedural world, seed races and beasts, watch kingdoms rise, war and rebel, then intervene with storms, plagues and bombs; pixel art on the desktop, `/omnirealm` |
 | [group-toggle](plugins/group-toggle) | Switch the desktop app's session sidebar between grouping by folder and by state in one click, from a line above the prompt or `/group` |
+| [keybeasts](plugins/keybeasts) | Codeerbeestjes die meetrommelen op je prompts en Claude's tool-calls: verdien keys, open kisten, verzamel hoeden en speel nieuwe beestjes vrij, `/keybeasts` |
