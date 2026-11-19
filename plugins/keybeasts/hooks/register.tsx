@@ -86,6 +86,16 @@ const apply = ($: $, change: (s: Save) => Result | Save, opts: { toast?: boolean
   return run
 }
 
+const NOTICE_MS = 12_000
+let noticeTimer: { cancel: () => void } | undefined
+
+/** Toont een melding in het paneel en haalt hem na een tijdje weer weg, zodat er geen oude regel blijft staan. */
+const notify = async ($: $, message: string) => {
+  noticeTimer?.cancel()
+  await update($, noticeAtom, () => message)
+  noticeTimer = $.clock.after(NOTICE_MS, () => void update($, noticeAtom, () => ''))
+}
+
 const applyNow = async ($: $, change: (s: Save) => Result | Save, opts: { toast?: boolean }): Promise<Result> => {
   const fresh = migrate(await $.store.get(STORE_KEY))
   const r = change(fresh)
@@ -97,7 +107,7 @@ const applyNow = async ($: $, change: (s: Save) => Result | Save, opts: { toast?
   await update($, saveAtom, () => out.save)
   $.ui.status(statusLine(out.save))
   const message = out.error ?? out.note
-  if (message) await update($, noticeAtom, () => message)
+  if (message) await notify($, message)
   if (out.note && opts.toast) $.ui.toast(out.note)
   for (const name of unlocked) $.ui.toast(`🏆 Prestatie: ${name}`)
   return out
@@ -232,6 +242,8 @@ const restartTutorial = async ($: $) => {
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     await $.command.register({ name: 'keybeasts', description: 'Open het Keybeasts-paneel', argumentHint: '[tutorial | help]' })
+    // Een melding uit een vorige sessie (bv. 'Gewoon: Bandana!') hoort er na een herstart niet meer te staan.
+    await update($, noticeAtom, () => '')
     await $.command.register({ name: 'keybeasts-tutorial', description: 'Start de Keybeasts-tutorial opnieuw' })
     const s = await loadSave($)
     $.ui.status(statusLine(s))
@@ -327,7 +339,11 @@ export const register: Register = on => {
     const emote = await read($, emoteAtom)
     const tab = await read($, tabAtom)
     const notice = await read($, noticeAtom)
-    const go = (t: Tab) => () => void update($, tabAtom, () => t)
+    const go = (t: Tab) => () => {
+      noticeTimer?.cancel()
+      void update($, noticeAtom, () => '')
+      void update($, tabAtom, () => t)
+    }
 
     // Eerste start: starter kiezen.
     if (s.owned.length === 0) {

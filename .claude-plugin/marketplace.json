@@ -63,7 +63,7 @@
       "name": "keybeasts",
       "source": "./plugins/keybeasts",
       "description": "Keybeasts: codeerbeestjes die meetrommelen op je prompts en Claude's tool-calls. Verdien keys, open kisten, verzamel hoeden en speel nieuwe beestjes vrij: /keybeasts",
-      "version": "0.4.2",
+      "version": "0.4.3",
       "category": "fun",
       "keywords": ["game", "pet", "idle", "typing", "collectibles"]
     }
